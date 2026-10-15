@@ -247,7 +247,7 @@ legend {
   width: 100%;
 }
 .muted {
-  color: #686f65;
+  color: #5e665b;
 }
 .fine-print {
   font-size: 12px;
@@ -338,7 +338,7 @@ legend {
   right: 15px;
   font-family: Georgia, serif;
   font-size: 215px;
-  color: #c8d1bd;
+  color: #707b66;
   line-height: 1;
   z-index: 0;
   pointer-events: none;
@@ -385,7 +385,7 @@ legend {
 }
 .division-row > span:first-child {
   font-size: 11px;
-  color: #777e71;
+  color: #626b5b;
 }
 .division-state {
   font-size: 10px;
@@ -1947,4 +1947,55 @@ p,
 }
 .permission-grid {
   margin-block: 22px;
+}
+
+.media-picker {
+  width: min(850px, calc(100vw - 32px));
+  max-height: 85vh;
+  border: 1px solid #ccd4c6;
+  padding: clamp(20px, 4vw, 36px);
+  color: #242822;
+  background: #f7f5f0;
+}
+.media-picker::backdrop {
+  background: rgb(24 38 29 / 55%);
+}
+.media-picker .media-grid {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  margin-block: 24px;
+}
+.media-choice {
+  border: 1px solid #d5dccf;
+  background: white;
+  padding: 12px;
+  text-align: start;
+  cursor: pointer;
+}
+.media-choice:hover {
+  border-color: #264d37;
+}
+.media-choice img {
+  height: 140px;
+  width: 100%;
+  object-fit: contain;
+  background: #f0f1ec;
+}
+.media-choice span {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.image-browse {
+  white-space: nowrap;
+  margin-block: 8px;
+}
+
+.pagination {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  margin-block: 28px;
+  font-size: 13px;
 }

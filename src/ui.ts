@@ -44,6 +44,7 @@ export function shell(
         <meta name="description" content="${description}" />
         <meta name="theme-color" content="#f7f5f0" />
         ${canonical ? html`<link rel="canonical" href="${canonical}" /><meta property="og:url" content="${canonical}" />` : ""}
+        ${canonical && !admin && !/\/(bag|checkout)$/.test(canonical) ? ["en", "ar", "si", "ta", "x-default"].map((code) => html`<link rel="alternate" hreflang="${code}" href="${canonical.split("?")[0]}${code === "en" || code === "x-default" ? "" : "?lang=" + code}" />`) : ""}
         <meta property="og:title" content="${title}" />
         <meta property="og:description" content="${description}" />
         <meta property="og:type" content="website" />
@@ -53,7 +54,7 @@ export function shell(
         <script src="${admin ? "/admin.js" : "/store.js"}" defer></script>
       </head>
       <body class="${admin ? "admin-body" : ""} ${page}">
-        <a class="skip" href="#main">Skip to content</a>${
+        <a class="skip" href="#main">${t("Skip to content", lang)}</a>${
           admin
             ? html`<header class="admin-top">
                 <a class="wordmark" href="/admin"
@@ -88,8 +89,13 @@ export function shell(
                 </nav>
                 <div class="header-tools">
                   <form method="get" class="language">
-                    <label class="sr-only" for="language">Language</label
-                    ><select id="language" name="lang" aria-label="Language">
+                    <label class="sr-only" for="language"
+                      >${t("Language", lang)}</label
+                    ><select
+                      id="language"
+                      name="lang"
+                      aria-label="${t("Language", lang)}"
+                    >
                       <option
                         value="en"
                         ${raw(lang === "en" ? "selected" : "")}
@@ -161,7 +167,7 @@ export function shell(
 export function card(p: Product, l: Locale) {
   return html`<article class="product-card">
     <a class="product-photo" href="/fashion/products/${p.slug}"
-      >${p.images[0] ? html`<img src="${p.images[0]}" ${raw(/^\/assets\/product-[1-6]\.webp$/.test(p.images[0]) ? `srcset="${p.images[0].replace(".webp", "-small.webp")} 480w, ${p.images[0]} 1000w" sizes="(max-width: 760px) 44vw, 22vw"` : "")} alt="${text(p.name, l)}" loading="lazy" width="804" height="1000" />` : html`<div class="image-empty">Image coming soon</div>`}${p.images[1] ? html`<img class="secondary" src="${p.images[1]}" alt="" loading="lazy" width="804" height="1000" />` : ""}${p.newArrival ? html`<span class="product-label">NEW EDIT</span>` : ""}</a
+      >${p.images[0] ? html`<img src="${p.images[0]}" ${raw(/^\/assets\/product-[1-6]\.webp$/.test(p.images[0]) ? `srcset="${p.images[0].replace(".webp", "-small.webp")} 480w, ${p.images[0]} 1000w" sizes="(max-width: 760px) 44vw, 22vw"` : "")} alt="${text(p.name, l)}" loading="lazy" width="804" height="1000" />` : html`<div class="image-empty">${t("Image coming soon", l)}</div>`}${p.images[1] ? html`<img class="secondary" src="${p.images[1]}" alt="" loading="lazy" width="804" height="1000" />` : ""}${p.newArrival ? html`<span class="product-label">${t("New arrival", l)}</span>` : ""}</a
     >
     <div class="product-meta">
       <a href="/fashion/products/${p.slug}" dir="auto">${text(p.name, l)}</a
@@ -169,7 +175,8 @@ export function card(p: Product, l: Locale) {
         >${money(p.salePrice ?? p.price, l)}${p.salePrice ? html` <s>${money(p.price, l)}</s>` : ""}</span
       >
     </div>
-    ${p.placeholder ? html`<small class="muted">Preview catalog · details being finalized</small>` : ""}
+    ${p.variants.every((v) => !v.available || v.stock === 0) ? html`<small class="stock-status">${t("Sold out", l)}</small>` : ""}
+    ${p.placeholder ? html`<small class="muted">${t("Preview catalog · details being finalized", l)}</small>` : ""}
   </article>`;
 }
 export function home(content: any, l: Locale, brand: any) {
@@ -185,7 +192,7 @@ export function home(content: any, l: Locale, brand: any) {
     <section class="division-feature">
       <div class="division-image">
         <img
-          src="${brand.heroImage || "/assets/product-2.webp"}"
+          src="${content.image || brand.heroImage || "/assets/product-2.webp"}"
           alt="UniGlobe Fashion collection"
           width="782"
           height="819"
@@ -198,7 +205,7 @@ export function home(content: any, l: Locale, brand: any) {
         </div>
         <h2 dir="auto">${text(content.featureTitle, l)}</h2>
         <p dir="auto">${text(content.body, l)}</p>
-        <a class="button" href="/fashion"
+        <a class="button" href="${content.ctaHref || "/fashion"}"
           >${text(content.cta, l)} <span>↗</span></a
         ><span class="large-number" aria-hidden="true">01</span>
       </div>
@@ -237,7 +244,7 @@ export function fashion(content: any, list: Product[], l: Locale, brand: any) {
         <div class="eyebrow">${text(content.eyebrow, l)}</div>
         <h1 dir="auto">${text(content.title, l)}</h1>
         <p dir="auto">${text(content.intro, l)}</p>
-        <a href="/fashion/shop" class="button"
+        <a href="${content.ctaHref || "/fashion/shop"}" class="button"
           >${text(content.cta, l)} <span>↗</span></a
         ><span class="hero-caption">${text(content.campaignCaption, l)}</span>
       </div>
@@ -276,19 +283,23 @@ export function listing(
   l: Locale,
   taxonomies: any[],
   query: any,
+  content: any,
 ) {
   return html`<main id="main" class="wrap listing">
-    <div class="eyebrow">UNIGLOBE FASHION / THE COLLECTION</div>
+    <div class="eyebrow" dir="auto">${text(content?.eyebrow, l)}</div>
     <h1 dir="auto">
-      ${t("all", l)}<sup>${list.length.toString().padStart(2, "0")}</sup>
+      ${text(content?.title, l) || t("all", l)}<sup
+        >${list.length.toString().padStart(2, "0")}</sup
+      >
     </h1>
+    ${text(content?.intro, l) ? html`<p dir="auto">${text(content.intro, l)}</p>` : ""}
     <form class="filters" method="get">
       <label
         >${t("search", l)}<input
           type="search"
           name="q"
           value="${query.q || ""}"
-          placeholder="Find your next favourite" /></label
+          placeholder="${t("Find your next favourite", l)}" /></label
       ><label
         >${t("Category", l)}<select name="category">
           <option value="">${t("All categories", l)}</option>
@@ -316,14 +327,30 @@ export function listing(
               </option>`,
           )}
         </select></label
+      ><label
+        >${t("Availability", l)}<select name="availability">
+          ${[
+            ["", "All availability"],
+            ["available", "Available to order"],
+            ["sold-out", "Sold out"],
+          ].map(
+            ([v, n]) =>
+              html`<option
+                value="${v}"
+                ${raw(query.availability === v ? "selected" : "")}
+              >
+                ${t(n, l)}
+              </option>`,
+          )}
+        </select></label
       ><button class="button">${t("Apply", l)}</button>
     </form>
     <div class="product-grid">${list.map((p) => card(p, l))}</div>
     ${
       !list.length
         ? html`<div class="empty-state">
-            <h2 dir="auto">No pieces found.</h2>
-            <a href="/fashion/shop">Clear your filters</a>
+            <h2 dir="auto">${t("No pieces found.", l)}</h2>
+            <a href="/fashion/shop">${t("Clear your filters", l)}</a>
           </div>`
         : ""
     }
@@ -351,12 +378,12 @@ export function detail(
           ${money(p.salePrice ?? p.price, l)}
           ${p.salePrice ? html`<s>${money(p.price, l)}</s>` : ""}
         </p>
-        ${p.placeholder ? html`<p class="notice" dir="auto">Preview piece. Name and price are temporary; product details are being finalized.</p>` : ""}
+        ${p.placeholder ? html`<p class="notice" dir="auto">${t("Preview piece. Name and price are temporary; product details are being finalized.", l)}</p>` : ""}
         <p dir="auto">${text(p.shortDescription, l)}</p>
         <form id="add-to-bag" data-product="${p.id}">
           <label
             >${t("Choose an option", l)}<select name="variant">
-              ${p.variants.map((v) => html`<option value="${v.id}" ${raw(!v.available || v.stock === 0 ? "disabled" : "")}>${[v.size, v.color].filter(Boolean).join(" / ") || "Standard — details to be confirmed"}${v.stock === 0 ? " — Out of stock" : ""}</option>`)}
+              ${p.variants.map((v) => html`<option value="${v.id}" ${raw(!v.available || v.stock === 0 ? "disabled" : "")}>${[v.size, v.color].filter(Boolean).join(" / ") || t("Details to be confirmed", l)}${v.stock === 0 ? " — " + t("Out of stock", l) : ""}</option>`)}
             </select></label
           ><label
             >${t("Quantity", l)}<input
@@ -377,33 +404,39 @@ export function detail(
           <details open>
             <summary>${t("Details", l)}</summary>
             <p dir="auto">
-              ${text(p.description, l) || "Further product details will be added soon."}
+              ${text(p.description, l) || t("Further product details will be added soon.", l)}
             </p>
           </details>
           <details>
             <summary>${t("Ordering & delivery", l)}</summary>
             <p dir="auto">${text(ordering?.deliveryNote, l)}</p>
             <p dir="auto">
-              Your order is recorded on this website. WhatsApp continuation is
-              optional after confirmation.
+              ${t("Your order is received when this website shows your confirmation. Sending a WhatsApp message is optional.", l)}
             </p>
           </details>
         </div>
       </div>
     </section>
     <section class="related">
-      <div class="section-top"><h2 dir="auto">Also in the edit.</h2></div>
+      <div class="section-top">
+        <h2 dir="auto">${t("Also in the edit.", l)}</h2>
+      </div>
       <div class="product-grid">
         ${related.slice(0, 3).map((p) => card(p, l))}
       </div>
     </section>
   </main>`;
 }
-export function bagPage(l: Locale) {
+export function bagPage(l: Locale, ordering: any) {
   return html`<main id="main" class="wrap bag-page">
     <div class="eyebrow">YOUR SELECTION</div>
     <h1 dir="auto">${t("bag", l)}.</h1>
-    <div id="bag-content"><p dir="auto">Loading your bag…</p></div>
+    <div
+      id="bag-content"
+      data-delivery-note="${text(ordering?.deliveryNote, l)}"
+    >
+      <p dir="auto">${t("Loading your bag…", l)}</p>
+    </div>
     <noscript
       >Enable JavaScript to manage your bag and place an order.</noscript
     >
@@ -413,9 +446,12 @@ export function checkoutPage(l: Locale, settings: any, siteKey?: string) {
   return html`<main id="main" class="wrap checkout-page">
     <div class="eyebrow">UNIGLOBE FASHION</div>
     <h1 dir="auto">${t("checkout", l)}.</h1>
-    ${!settings?.enabled ? html`<p class="notice" dir="auto">Ordering is not open yet. You can explore the collection and save pieces in your bag.</p>` : ""}
+    ${!settings?.enabled ? html`<p class="notice" dir="auto">${t("Ordering is not open yet. You can explore the collection and save pieces in your bag.", l)}</p>` : ""}
     <div class="checkout-grid">
-      <form id="checkout-form">
+      <form
+        id="checkout-form"
+        data-ordering-enabled="${settings?.enabled ? "true" : "false"}"
+      >
         <h2 dir="auto">${t("Contact & delivery", l)}</h2>
         <div class="form-grid">
           <label class="full"
@@ -479,9 +515,7 @@ export function checkoutPage(l: Locale, settings: any, siteKey?: string) {
           /></label>
         </div>
         <p class="fine-print" dir="auto">
-          Your details are used to process and deliver this order. No online
-          payment is collected. Delivery arrangements will be confirmed with
-          you.
+          ${t("Your details are used to process and deliver this order. No online payment is collected. Delivery arrangements will be confirmed with you.", l)}
         </p>
         ${
           settings?.turnstileEnabled && siteKey
@@ -505,7 +539,7 @@ export function checkoutPage(l: Locale, settings: any, siteKey?: string) {
       </form>
       <aside id="checkout-summary" class="order-summary">
         <h2 dir="auto">${t("Your selection", l)}</h2>
-        <p dir="auto">Loading…</p>
+        <p dir="auto">${t("Loading…", l)}</p>
       </aside>
     </div>
   </main>`;
@@ -514,7 +548,7 @@ export function confirmation(o: any, settings: any, wa: string, l: Locale) {
   return html`<main id="main" class="wrap confirmation">
     <div class="success-mark">✓</div>
     <div class="eyebrow">${t("ORDER PLACED SUCCESSFULLY", l)}</div>
-    <h1 dir="auto">Thank you, ${o.customer.name.split(" ")[0]}.</h1>
+    <h1 dir="auto">${t("Thank you", l)}, ${o.customer.name.split(" ")[0]}.</h1>
     <p class="lead" dir="auto">
       ${text(settings?.confirmation, l) || "Your order has already been received."}
     </p>
@@ -526,7 +560,10 @@ export function confirmation(o: any, settings: any, wa: string, l: Locale) {
       ${o.items.map(
         (i: any) =>
           html`<div class="receipt-item">
-            <span>${i.name}<small>${i.variant} · Qty ${i.quantity}</small></span
+            <span
+              >${i.name}<small
+                >${i.variant} · ${t("Quantity", l)} ${i.quantity}</small
+              ></span
             ><span>${money(i.price * i.quantity, l)}</span>
           </div>`,
       )}
@@ -543,7 +580,7 @@ export function confirmation(o: any, settings: any, wa: string, l: Locale) {
     ${
       wa
         ? html`<div class="whatsapp-note">
-            <h2 dir="auto">Keep the conversation going.</h2>
+            <h2 dir="auto">${t("Keep the conversation going.", l)}</h2>
             <p dir="auto">
               ${t("Your order is already confirmed. Sending this WhatsApp message is optional and may help us contact you faster.", l)}
             </p>
@@ -569,6 +606,17 @@ export function contentPage(
   l: Locale,
 ) {
   const soon = ["academy", "real-estate"].includes(id);
+  const workEmail = work.contactEmail || contacts.email;
+  const workHref =
+    work.ctaHref && work.ctaHref !== "/contact"
+      ? work.ctaHref
+      : workEmail
+        ? "mailto:" + workEmail
+        : work.contactPhone
+          ? "tel:" + work.contactPhone
+          : id !== "contact"
+            ? work.ctaHref || "/contact"
+            : "";
   return html`<main id="main" class="content-page ${id}">
     <section class="wrap content-intro">
       <div class="eyebrow">${text(content.eyebrow, l)}</div>
@@ -592,7 +640,7 @@ export function contentPage(
             <div class="eyebrow">${text(work.eyebrow, l)}</div>
             <h2 dir="auto">${text(work.title, l)}</h2>
             <p dir="auto">${text(work.intro, l)}</p>
-            ${work.contactEmail || contacts.email ? html`<a class="button" href="mailto:${work.contactEmail || contacts.email}">${text(work.cta, l)} ↗</a>` : html`<p class="muted" dir="auto">Contact details will be available here soon.</p>`}
+            ${workHref ? html`<a class="button" href="${workHref}">${text(work.cta, l)} ↗</a>` : html`<p class="muted" dir="auto">Contact details will be available here soon.</p>`}
           </section>`
         : ""
     }

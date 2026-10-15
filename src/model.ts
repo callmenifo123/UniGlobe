@@ -8,6 +8,7 @@ export type Env = {
   AUTH_KEY: string;
   BOOTSTRAP_TOKEN: string;
   TELEGRAM_BOT_TOKEN?: string;
+  ORDER_EMAIL?: SendEmail;
   EMAIL_API_TOKEN?: string;
   EMAIL_API_URL?: string;
   TURNSTILE_SITE_KEY?: string;
@@ -143,7 +144,12 @@ export const money = (n: number, l: Locale = "en") =>
         : l === "ta"
           ? "ta-LK"
           : "en-LK",
-    { style: "currency", currency: "LKR", maximumFractionDigits: 0 },
+    {
+      style: "currency",
+      currency: "LKR",
+      minimumFractionDigits: n % 100 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    },
   ).format(n / 100);
 export const L = (en: string) => ({ en, ar: "", si: "", ta: "" });
 export function whatsappLink(number: string, order: any) {
@@ -173,6 +179,9 @@ export async function products(
       .prepare("SELECT product_id,variant_id,quantity FROM inventory")
       .all<any>()
   ).results;
+  const stocks = new Map(
+    inventory.map((i) => [i.product_id + ":" + i.variant_id, i.quantity]),
+  );
   return r.results
     .map((r) => {
       const p = JSON.parse(r.data);
@@ -183,10 +192,7 @@ export async function products(
         inventoryRevision: r.inventory_revision,
         variants: p.variants.map((v: any) => ({
           ...v,
-          stock:
-            inventory.find(
-              (i) => i.product_id === r.id && i.variant_id === v.id,
-            )?.quantity ?? null,
+          stock: stocks.get(r.id + ":" + v.id) ?? null,
         })),
       };
     })

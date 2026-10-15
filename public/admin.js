@@ -119,6 +119,8 @@
           d.countries = new FormData(f).getAll("countries");
         }
         const result = await request(f.dataset.api, f.dataset.method, d);
+        if (result.version && f.elements.version)
+          f.elements.version.value = result.version;
         const status = f.querySelector(".save-status");
         if (status) status.textContent = "Saved successfully";
         if (result.redirect) location.assign(result.redirect);
@@ -175,6 +177,86 @@
       }
     }
   });
+  // The same picker works for catalog galleries, page imagery and branding.
+  let imageTarget;
+  const picker = document.createElement("dialog");
+  picker.className = "media-picker";
+  picker.setAttribute("aria-labelledby", "media-picker-title");
+  picker.innerHTML =
+    '<div class="section-top"><h2 id="media-picker-title">Choose an image</h2><button type="button" class="text-button" data-close-picker>Close</button></div><p class="muted">Select an uploaded image or an optimized supplied asset.</p><div class="form-error" role="alert"></div><div class="media-grid"></div><button type="button" class="button secondary-button" data-more-media hidden>Load more</button>';
+  document.body.append(picker);
+  let nextMediaPage = 1;
+  async function loadMedia() {
+    const more = picker.querySelector("[data-more-media]");
+    more.disabled = true;
+    try {
+      const result = await request(
+        "/api/admin/media?page=" + nextMediaPage,
+        "GET",
+      );
+      picker
+        .querySelector(".media-grid")
+        .insertAdjacentHTML(
+          "beforeend",
+          result.items
+            .map(
+              (m) =>
+                `<button type="button" class="media-choice" data-image-path="${esc(m.path)}"><img src="${esc(m.path)}" alt="" loading="lazy"><span>${esc(m.name)}</span></button>`,
+            )
+            .join(""),
+        );
+      nextMediaPage = result.nextPage;
+      more.hidden = !nextMediaPage;
+    } catch (error) {
+      picker.querySelector(".form-error").textContent = error.message;
+    } finally {
+      more.disabled = false;
+    }
+  }
+  picker
+    .querySelector("[data-close-picker]")
+    .addEventListener("click", () => picker.close());
+  picker
+    .querySelector("[data-more-media]")
+    .addEventListener("click", loadMedia);
+  picker.addEventListener("click", (event) => {
+    const choice = event.target.closest("[data-image-path]");
+    if (choice && imageTarget) {
+      imageTarget.value = choice.dataset.imagePath;
+      imageTarget.dispatchEvent(new Event("change", { bubbles: true }));
+      picker.close();
+      imageTarget.focus();
+    }
+  });
+  const imageInputs =
+    'input[name="images"], input[name="image"], input[name="logo"], input[name="holdingsLogo"], input[name="fashionLogo"], input[name="favicon"], input[name="heroImage"]';
+  function addImagePickers() {
+    document.querySelectorAll(imageInputs).forEach((input) => {
+      if (input.dataset.pickerReady) return;
+      input.dataset.pickerReady = "true";
+      if (!input.getAttribute("aria-label") && input.name === "images")
+        input.setAttribute("aria-label", "Gallery image path");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "text-button image-browse";
+      button.textContent = "Choose image";
+      input.insertAdjacentElement("afterend", button);
+      button.addEventListener("click", () => {
+        imageTarget = input;
+        nextMediaPage = 1;
+        picker.querySelector(".media-grid").replaceChildren();
+        picker.querySelector(".form-error").textContent = "";
+        picker.showModal();
+        loadMedia();
+      });
+    });
+  }
+  addImagePickers();
+  if ($("#image-fields"))
+    new MutationObserver(addImagePickers).observe($("#image-fields"), {
+      childList: true,
+      subtree: true,
+    });
   $("#media-upload")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.currentTarget,

@@ -378,9 +378,9 @@ export function recordForm(kind: string, id: string, data: any) {
                 />Email notifications enabled</label
               >${field("Company recipients (comma separated)", "emailRecipients", data.emailRecipients.join(", "))}${field("Sender address", "emailSender", data.emailSender, "email")}
               <p class="muted">
-                Email transport URL and credential are server secrets.
-                Cloudflare Email Sending needs account capability verification
-                before production activation.
+                A native Cloudflare email binding or an approved HTTPS transport
+                must be configured on the server. Verify the sender and customer
+                receipt capability before enabling live delivery.
               </p>
               <h2>Telegram</h2>
               <label class="check"
@@ -458,6 +458,14 @@ export function taxonomyPage(kind: string, items: any[]) {
     )}`;
 }
 export function ordersPage(orders: any[], query: any, statuses: string[]) {
+  const pageLink = (page: number) =>
+    "/admin/orders?" +
+    new URLSearchParams({
+      q: query.q || "",
+      status: query.status || "",
+      archived: query.archived || "",
+      page: String(page),
+    });
   return html`<div class="admin-heading">
       <div>
         <div class="eyebrow">SALES & FULFILMENT</div>
@@ -508,7 +516,12 @@ export function ordersPage(orders: any[], query: any, statuses: string[]) {
         </tbody>
       </table>
       ${!orders.length ? html`<p class="empty-state">No orders match this view.</p>` : ""}
-    </div>`;
+    </div>
+    <nav class="pagination" aria-label="Order pages">
+      ${query.page > 1 ? html`<a class="underlink" href="${pageLink(query.page - 1)}">← Previous</a>` : ""}
+      <span>Page ${query.page}</span>
+      ${query.hasNext ? html`<a class="underlink" href="${pageLink(query.page + 1)}">Next →</a>` : ""}
+    </nav>`;
 }
 export function orderPage(o: any, jobs: any[], statuses: string[]) {
   return html`<div class="admin-heading">
@@ -552,6 +565,7 @@ export function orderPage(o: any, jobs: any[], statuses: string[]) {
         data-order-form
       >
         <h2>Manage order</h2>
+        <input type="hidden" name="version" value="${o.version}" />
         <label for="order-status">Status</label
         ><select id="order-status" name="status">
           ${statuses.map((s) => html`<option ${raw(o.status === s ? "selected" : "")}>${s}</option>`)}</select

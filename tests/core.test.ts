@@ -8,6 +8,7 @@ import {
   record,
   whatsappLink,
   L,
+  money,
 } from "../src/model";
 import {
   random,
@@ -22,7 +23,8 @@ import {
   rate,
 } from "../src/security";
 import { placeOrder } from "../src/orders";
-import { deliver } from "../src/notifications";
+import { deliver, telegramChunks } from "../src/notifications";
+import { sendReceipt } from "../src/email";
 const e = env as unknown as Env;
 const customer = {
   name: "Test Customer",
@@ -180,6 +182,17 @@ describe("public website and catalog", () => {
     expect(body).not.toContain("Focus lounge set");
     const p = await req("/fashion/products/focus-lounge-set");
     expect(await p.text()).toContain("application/ld+json");
+  });
+  it("preserves fractional LKR prices and localized search canonicals", async () => {
+    expect(money(150050, "en")).toContain("1,500.50");
+    const page = await (await req("/fashion/shop?lang=ar")).text();
+    expect(page).toContain(
+      'rel="canonical" href="https://uniglobeholdings.com/fashion/shop?lang=ar"',
+    );
+    expect(page).toContain('hreflang="ta"');
+    expect(page).toContain('name="availability"');
+    const content = await record(e.DB, "content", "catalog");
+    expect(content.seoDescription.en.length).toBeGreaterThan(20);
   });
   it("uses temporary LKR 1500 prices and no invented stock", async () => {
     const ps = await products(e.DB);
@@ -391,6 +404,110 @@ describe("notification outbox", () => {
     ).toBe(2);
     expect(mock).toHaveBeenCalledTimes(2);
   });
+  it("sends native Cloudflare email receipts with stable IDs and safe headers", async () => {
+    await open({
+      emailEnabled: true,
+      emailRecipients: ["orders@example.test"],
+      emailSender: "orders@example.test",
+    });
+    await placeOrder(e, order());
+    const send = vi.fn().mockResolvedValue({ messageId: "native-test" });
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    await deliver({ ...e, ORDER_EMAIL: { send } });
+    expect(send).toHaveBeenCalledTimes(2);
+    const email = send.mock.calls[0][0];
+    expect(email.text).toContain("Test Customer");
+    expect(email.text).toContain("10 Test Street");
+    expect(email.headers["Message-ID"]).toMatch(
+      /^<uniglobe-.*@uniglobeholdings.com>$/,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    await sendReceipt(
+      { ...e, ORDER_EMAIL: { send } },
+      {
+        id: "safe-id",
+        from: "orders@example.test",
+        to: "customer@example.test",
+        subject: "Hello\r\nBcc: invalid",
+        text: "Receipt",
+      },
+    );
+    expect(send.mock.calls[2][0].subject).not.toMatch(/[\r\n]/);
+  });
+  it("recovers interrupted final attempts and prevents overlapping delivery", async () => {
+    await open({ telegramEnabled: true, telegramChats: ["12345"] });
+    await placeOrder(e, order());
+    await e.DB.prepare(
+      "UPDATE outbox SET status='sending',attempts=5,lease_until=1",
+    ).run();
+    await deliver(e);
+    expect(
+      (await e.DB.prepare("SELECT status FROM outbox").first<any>()).status,
+    ).toBe("failed");
+    await e.DB.prepare(
+      "UPDATE outbox SET status='pending',attempts=0,next_attempt=0",
+    ).run();
+    const mock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => Response.json({ ok: true }));
+    const transport = { ...e, TELEGRAM_BOT_TOKEN: "test-token" };
+    await Promise.all([deliver(transport), deliver(transport)]);
+    expect(mock).toHaveBeenCalledTimes(1);
+    expect(
+      (await e.DB.prepare("SELECT status FROM outbox").first<any>()).status,
+    ).toBe("sent");
+  });
+  it("resumes acknowledged Telegram chunks and respects rate-limit retry timing", async () => {
+    await open({
+      telegramEnabled: true,
+      telegramChats: ["12345"],
+      telegramTemplate: "x".repeat(5000) + "{orderDetails}",
+    });
+    await placeOrder(e, order());
+    const mock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ ok: true }))
+      .mockResolvedValueOnce(
+        Response.json(
+          { ok: false, parameters: { retry_after: 600 } },
+          { status: 429 },
+        ),
+      );
+    await deliver({ ...e, TELEGRAM_BOT_TOKEN: "test-token" });
+    let job = await e.DB.prepare("SELECT * FROM outbox").first<any>();
+    expect(job.progress).toBe(1);
+    expect(job.status).toBe("retry");
+    expect(job.next_attempt).toBeGreaterThan(Date.now() + 590000);
+    await e.DB.prepare("UPDATE outbox SET next_attempt=0").run();
+    mock.mockResolvedValue(Response.json({ ok: true }));
+    await deliver({ ...e, TELEGRAM_BOT_TOKEN: "test-token" });
+    expect(mock).toHaveBeenCalledTimes(3);
+    expect(JSON.parse(String(mock.mock.calls[2][1]?.body)).text).toBe(
+      JSON.parse(String(mock.mock.calls[1][1]?.body)).text,
+    );
+    job = await e.DB.prepare("SELECT * FROM outbox").first<any>();
+    expect(job.status).toBe("sent");
+    const unicode = "😀".repeat(3000);
+    const chunks = telegramChunks(unicode);
+    expect(chunks.join("")).toBe(unicode);
+    expect(
+      chunks.every(
+        (part) =>
+          part.length <= 3900 && Array.from(part).every((c) => c === "😀"),
+      ),
+    ).toBe(true);
+  });
+  it("deduplicates company/customer destinations without dropping receipts", async () => {
+    await open({
+      emailEnabled: true,
+      emailRecipients: [customer.email, customer.email],
+      emailSender: "orders@example.test",
+    });
+    await placeOrder(e, order());
+    expect(
+      (await e.DB.prepare("SELECT * FROM outbox").all()).results,
+    ).toHaveLength(1);
+  });
   it("retains orders when notification transport fails", async () => {
     await open({ telegramEnabled: true, telegramChats: ["12345"] });
     const token = await placeOrder(e, order());
@@ -425,6 +542,20 @@ describe("admin boundaries", () => {
     expect((await req("/api/admin/products", "POST", {}, u)).status).toBe(403);
     expect((await req("/admin/orders", "GET", undefined, u)).status).toBe(403);
     expect((await req("/api/admin/media", "POST", {}, u)).status).toBe(403);
+  });
+  it("lets catalog editors reuse images without granting upload or settings access", async () => {
+    const u = await user(["products.write"]);
+    const listing = await req("/api/admin/media", "GET", undefined, u);
+    expect(listing.status).toBe(200);
+    expect(
+      ((await listing.json()) as any).items.some(
+        (m: any) => m.path === "/assets/holdings-logo-transparent.webp",
+      ),
+    ).toBe(true);
+    expect((await req("/api/admin/media", "POST", {}, u)).status).toBe(403);
+    expect(
+      (await req("/api/admin/media", "GET", undefined, await user([]))).status,
+    ).toBe(403);
   });
   it("requires password and TOTP, then sets a secure HttpOnly session policy", async () => {
     const u = await user();
@@ -602,6 +733,64 @@ describe("configuration and security regression checks", () => {
       ).status,
     ).toBe(403);
   });
+  it("paginates orders while retaining search filters", async () => {
+    const batch = Array.from({ length: 51 }, (_, i) =>
+      e.DB.prepare(
+        "INSERT INTO orders(token,idempotency,request_hash,customer,items,total) VALUES(?,?,?,?,?,?)",
+      ).bind(
+        random(),
+        crypto.randomUUID(),
+        "test",
+        JSON.stringify({ ...customer, name: "Paging customer" }),
+        "[]",
+        150000,
+      ),
+    );
+    await e.DB.batch(batch);
+    const u = await user(["orders.read"]);
+    const first = await (
+      await req("/admin/orders?q=Paging", "GET", undefined, u)
+    ).text();
+    expect(first.match(/<td><a href="\/admin\/orders\//g)).toHaveLength(50);
+    expect(first).toContain("page=2");
+    const second = await (
+      await req("/admin/orders?q=Paging&page=2", "GET", undefined, u)
+    ).text();
+    expect(second.match(/<td><a href="\/admin\/orders\//g)).toHaveLength(1);
+    expect(second).toContain("Page 2");
+    expect(second).toContain("q=Paging");
+  });
+  it("uses configured campaign imagery and collaboration destinations", async () => {
+    const u = await user(["content.write"]);
+    const home = await record(e.DB, "content", "home");
+    expect(
+      (
+        await req(
+          "/api/admin/records/content/home",
+          "PUT",
+          { ...home, image: "/assets/product-4.webp", ctaHref: "/contact" },
+          u,
+        )
+      ).status,
+    ).toBe(200);
+    const page = await (await req("/")).text();
+    expect(page).toContain('src="/assets/product-4.webp"');
+    expect(page).toContain('class="button" href="/contact"');
+    const work = await record(e.DB, "content", "work");
+    expect(
+      (
+        await req(
+          "/api/admin/records/content/work",
+          "PUT",
+          { ...work, ctaHref: "https://partners.example.test" },
+          u,
+        )
+      ).status,
+    ).toBe(200);
+    expect(await (await req("/contact")).text()).toContain(
+      'href="https://partners.example.test"',
+    );
+  });
   it("rejects stale configuration writes", async () => {
     const u = await user(["contacts.write"]);
     const contacts = await record(e.DB, "contacts");
@@ -678,7 +867,7 @@ describe("configuration and security regression checks", () => {
         await req(
           "/api/admin/orders/" + o.id,
           "PUT",
-          { status: "Invalid", notes: "", archived: false },
+          { version: 1, status: "Invalid", notes: "", archived: false },
           u,
         )
       ).status,
@@ -689,6 +878,7 @@ describe("configuration and security regression checks", () => {
           "/api/admin/orders/" + o.id,
           "PUT",
           {
+            version: 1,
             status: "Processing",
             notes: "Contacted customer",
             archived: false,
@@ -697,6 +887,16 @@ describe("configuration and security regression checks", () => {
         )
       ).status,
     ).toBe(200);
+    expect(
+      (
+        await req(
+          "/api/admin/orders/" + o.id,
+          "PUT",
+          { version: 1, status: "Cancelled", notes: "stale", archived: false },
+          u,
+        )
+      ).status,
+    ).toBe(409);
     expect(
       (
         await e.DB.prepare("SELECT status,notes FROM orders WHERE id=?")

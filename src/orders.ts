@@ -101,7 +101,11 @@ export async function placeOrder(env: Env, body: unknown) {
   if (settings.telegramEnabled)
     for (const destination of settings.telegramChats)
       jobs.push({ channel: "telegram", destination });
-  for (const job of jobs)
+  for (const job of [
+    ...new Map(
+      jobs.map((job) => [job.channel + ":" + job.destination, job]),
+    ).values(),
+  ])
     batch.push(
       env.DB.prepare(
         "INSERT INTO outbox(id,order_id,channel,destination) SELECT ?,id,?,? FROM orders WHERE token=?",

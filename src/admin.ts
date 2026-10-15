@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { emailConfigured } from "./email";
+import { suppliedMedia } from "./media";
 import { HTTPException } from "hono/http-exception";
 import { imageSize } from "image-size";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
@@ -632,10 +634,7 @@ admin.put("/api/admin/records/:kind/:id", async (c) => {
         },
         400,
       );
-    if (
-      data.emailEnabled &&
-      (!c.env.EMAIL_API_TOKEN || !c.env.EMAIL_API_URL || !data.emailSender)
-    )
+    if (data.emailEnabled && (!emailConfigured(c.env) || !data.emailSender))
       return c.json(
         {
           error:
@@ -729,6 +728,7 @@ admin.delete(
 admin.put("/api/admin/orders/:id", required("orders.write"), async (c) => {
   const d = z
     .object({
+      version: z.number().int().min(1),
       status: z.string(),
       notes: z.string().max(5000),
       archived: z.boolean(),
@@ -737,11 +737,18 @@ admin.put("/api/admin/orders/:id", required("orders.write"), async (c) => {
   const settings = await record(c.env.DB, "ordering");
   if (!settings.statuses.includes(d.status))
     return c.json({ error: "Unknown status" }, 400);
-  await c.env.DB.prepare(
-    "UPDATE orders SET status=?,notes=?,archived=? WHERE id=?",
+  const result = await c.env.DB.prepare(
+    "UPDATE orders SET status=?,notes=?,archived=?,version=version+1 WHERE id=? AND version=?",
   )
-    .bind(d.status, d.notes, d.archived ? 1 : 0, c.req.param("id"))
+    .bind(d.status, d.notes, d.archived ? 1 : 0, c.req.param("id"), d.version)
     .run();
+  if (!result.meta.changes)
+    return c.json(
+      {
+        error: "This order changed or no longer exists. Reload before saving.",
+      },
+      409,
+    );
   await audit(
     c.env.DB,
     c.get("user").id,
@@ -749,7 +756,7 @@ admin.put("/api/admin/orders/:id", required("orders.write"), async (c) => {
     c.req.param("id"),
     d.status,
   );
-  return c.json({ ok: true });
+  return c.json({ ok: true, version: d.version + 1 });
 });
 admin.post(
   "/api/admin/notifications/:id/retry",
@@ -897,6 +904,32 @@ admin.delete("/api/admin/users/:id", required("admins.write"), async (c) => {
   await c.env.DB.prepare("DELETE FROM admins WHERE id=?").bind(u.id).run();
   await audit(c.env.DB, c.get("user").id, "admin.deleted", u.id);
   return c.json({ ok: true });
+});
+admin.get("/api/admin/media", async (c) => {
+  if (
+    !["media.write", "products.write", "branding.write", "content.write"].some(
+      (p) => allow(c.get("user"), p),
+    )
+  )
+    return c.json({ error: "Permission denied" }, 403);
+  const page = Math.max(
+    1,
+    Math.min(10000, Number.parseInt(c.req.query("page") || "1") || 1),
+  );
+  const rows = await c.env.DB.prepare(
+    "SELECT id,name FROM media ORDER BY created_at DESC,id LIMIT 61 OFFSET ?",
+  )
+    .bind((page - 1) * 60)
+    .all<any>();
+  return c.json({
+    items: [
+      ...(page === 1 ? suppliedMedia : []),
+      ...rows.results
+        .slice(0, 60)
+        .map((r) => ({ path: "/media/" + r.id, name: r.name })),
+    ],
+    nextPage: rows.results.length > 60 ? page + 1 : null,
+  });
 });
 admin.post("/api/admin/media", required("media.write"), async (c) => {
   const data = await c.req.parseBody();
@@ -1056,8 +1089,12 @@ admin.get("/admin/:section?/:id?", async (c) => {
       );
     } else {
       const q = c.req.query();
+      const page = Math.max(
+        1,
+        Math.min(100000, Number.parseInt(q.page || "1") || 1),
+      );
       const rows = await c.env.DB.prepare(
-        "SELECT * FROM orders WHERE archived=? AND (?='' OR status=?) AND (?='' OR customer LIKE ? OR CAST(id AS TEXT)=?) ORDER BY id DESC LIMIT 200",
+        "SELECT * FROM orders WHERE archived=? AND (?='' OR status=?) AND (?='' OR customer LIKE ? OR CAST(id AS TEXT)=?) ORDER BY id DESC LIMIT 51 OFFSET ?",
       )
         .bind(
           q.archived === "1" ? 1 : 0,
@@ -1066,9 +1103,14 @@ admin.get("/admin/:section?/:id?", async (c) => {
           q.q || "",
           "%" + (q.q || "") + "%",
           (q.q || "").replace("UGF-", ""),
+          (page - 1) * 50,
         )
         .all();
-      body = ordersPage(rows.results, q, settings.statuses);
+      body = ordersPage(
+        rows.results.slice(0, 50),
+        { ...q, page, hasNext: rows.results.length > 50 },
+        settings.statuses,
+      );
     }
   } else if (section === "media") {
     const rows = await c.env.DB.prepare(
@@ -1099,7 +1141,7 @@ admin.get("/admin/:section?/:id?", async (c) => {
           copies in your catalog and page settings.
         </p>
         <div class="media-grid">
-          ${["product-1", "product-2", "product-3", "product-4", "product-5", "product-6", "fashion-logo-transparent", "holdings-logo"].map((n) => html`<div><img src="/assets/${n}.webp" alt="${n}" loading="lazy" /><input readonly aria-label="Asset path" value="/assets/${n}.webp" /></div>`)}
+          ${suppliedMedia.map((m) => html`<div><img src="${m.path}" alt="${m.name}" loading="lazy" /><input readonly aria-label="Asset path" value="${m.path}" /></div>`)}
         </div>
       </section>`;
   } else if (section === "users")

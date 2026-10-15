@@ -30,7 +30,7 @@ The supplied catalog is deliberately marked as a preview, with the requested tem
 
 In **Ordering & notifications**, enable **Accept real orders** for your local test instance. Use dummy customer data only. You can then test `/fashion` → product → bag → checkout → confirmation. Notifications remain disabled unless their transports are configured. Enable WhatsApp continuation only with a number you control. The order remains recorded without opening WhatsApp.
 
-The admin can manage products, galleries, variants, categories, collections, prices, priorities, country availability, branding, page copy, translations, contact/social channels, notification destinations/templates, order statuses, users/permissions, sessions and audits.
+Image pickers let editors reuse uploaded and supplied assets without copying paths. Orders are paginated and versioned to prevent stale edits. The admin can manage products, galleries, variants, categories, collections, prices, priorities, country availability, branding, page copy, translations, contact/social channels, notification destinations/templates, order statuses, users/permissions, sessions and audits.
 
 ## Validation
 
@@ -41,13 +41,13 @@ npm run test:browser
 npm run build
 ```
 
-`npm test` runs against isolated local Workers/D1/R2 bindings. Network notifications are mocked. Browser tests start a separate Worker on port 8788 with a temporary database, generate temporary credentials, and remove that database afterward. They do not modify the development database. Install Chromium with `npx playwright install chromium` if needed, or set `CHROMIUM_PATH`. The provided cloud machine uses `/usr/bin/chromium`.
+`npm test` runs against isolated local Workers/D1/R2 bindings. Native Cloudflare email and network notification transports are mocked. Browser journeys include automated WCAG AA accessibility checks; these supplement visual review, not replace it. Browser tests start a separate Worker on port 8788 with a temporary database, generate temporary credentials, and remove that database afterward. They do not modify the development database. Install Chromium with `npx playwright install chromium` if needed, or set `CHROMIUM_PATH`. The provided cloud machine uses `/usr/bin/chromium`.
 
 `npm run build` is a **dry run**, not a deployment. CI runs these same checks. Screenshots used for manual visual review are local QA artifacts, not proof of production deployment.
 
 ## Production configuration
 
-See [deployment instructions](docs/DEPLOYMENT.md), [architecture](docs/ARCHITECTURE.md), [security notes](docs/SECURITY.md), and [current build status](docs/BUILD_STATUS.md).
+See [notification integration instructions](docs/NOTIFICATIONS.md), [deployment instructions](docs/DEPLOYMENT.md), [architecture](docs/ARCHITECTURE.md), [security notes](docs/SECURITY.md), and [current build status](docs/BUILD_STATUS.md).
 
 Production deployment is currently deferred by the owner. No Cloudflare resources or DNS records have been changed. UniGlobe Mail is a separate service and must remain untouched.
 

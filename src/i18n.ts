@@ -232,6 +232,148 @@ export const dictionary: Record<string, [string, string, string, string]> = {
       "මෙම වෙබ් අඩවියේ තහවුරු කිරීම පෙන්වූ විට ඔබේ ඇණවුම ලැබී ඇත. WhatsApp පණිවිඩයක් යැවීම විකල්පයි.",
       "இந்த இணையதளத்தில் உறுதிப்படுத்தல் காட்டப்பட்டதும் உங்கள் ஆர்டர் பெறப்பட்டது. WhatsApp செய்தி அனுப்புவது விருப்பமானது.",
     ],
+  "Skip to content": [
+    "Skip to content",
+    "انتقل إلى المحتوى",
+    "අන්තර්ගතයට යන්න",
+    "உள்ளடக்கத்திற்குச் செல்",
+  ],
+  Language: ["Language", "اللغة", "භාෂාව", "மொழி"],
+  "Image coming soon": [
+    "Image coming soon",
+    "الصورة قريباً",
+    "ඡායාරූපය ළඟදීම",
+    "படம் விரைவில்",
+  ],
+  "New arrival": ["New arrival", "وصل حديثاً", "නව පැමිණීම", "புதிய வரவு"],
+  "Preview catalog · details being finalized": [
+    "Preview catalog · details being finalized",
+    "كتالوج أولي · التفاصيل قيد الإعداد",
+    "පෙරදසුන් නාමාවලිය · විස්තර සකස් වෙමින් පවතී",
+    "முன்னோட்டப் பட்டியல் · விவரங்கள் தயாராகின்றன",
+  ],
+  "No pieces found.": [
+    "No pieces found.",
+    "لم يتم العثور على منتجات.",
+    "නිෂ්පාදන හමු නොවීය.",
+    "பொருட்கள் எதுவும் இல்லை.",
+  ],
+  "Clear your filters": [
+    "Clear your filters",
+    "إلغاء عوامل التصفية",
+    "පෙරහන් ඉවත් කරන්න",
+    "வடிப்பான்களை நீக்கு",
+  ],
+  "Find your next favourite": [
+    "Find your next favourite",
+    "ابحث عن منتجك المفضل",
+    "ඔබේ ප්‍රියතම නිෂ්පාදනය සොයන්න",
+    "உங்களுக்குப் பிடித்த பொருளைத் தேடுங்கள்",
+  ],
+  "Unavailable product": [
+    "Unavailable product",
+    "منتج غير متاح",
+    "ලබාගත නොහැකි නිෂ්පාදනය",
+    "கிடைக்காத பொருள்",
+  ],
+  "No longer available": [
+    "No longer available",
+    "لم يعد متاحاً",
+    "දැන් ලබාගත නොහැක",
+    "இப்போது கிடைக்கவில்லை",
+  ],
+  "Remove unavailable items to continue.": [
+    "Remove unavailable items to continue.",
+    "أزل المنتجات غير المتاحة للمتابعة.",
+    "ඉදිරියට යාමට ලබාගත නොහැකි නිෂ්පාදන ඉවත් කරන්න.",
+    "தொடர, கிடைக்காத பொருட்களை அகற்றவும்.",
+  ],
+  "Loading your bag…": [
+    "Loading your bag…",
+    "جارٍ تحميل حقيبتك…",
+    "ඔබේ බෑගය පූරණය වෙමින්…",
+    "உங்கள் பை ஏற்றப்படுகிறது…",
+  ],
+  "Loading…": ["Loading…", "جارٍ التحميل…", "පූරණය වෙමින්…", "ஏற்றப்படுகிறது…"],
+  "Thank you": ["Thank you", "شكراً لك", "ස්තූතියි", "நன்றி"],
+  "Keep the conversation going.": [
+    "Keep the conversation going.",
+    "لنبقَ على تواصل.",
+    "සම්බන්ධව සිටිමු.",
+    "தொடர்பில் இருப்போம்.",
+  ],
+  "Also in the edit.": [
+    "Also in the edit.",
+    "من المجموعة أيضاً.",
+    "එකතුවේ තවත් දෑ.",
+    "தொகுப்பில் மேலும்.",
+  ],
+  "Further product details will be added soon.": [
+    "Further product details will be added soon.",
+    "ستُضاف تفاصيل المنتج قريباً.",
+    "වැඩිදුර නිෂ්පාදන විස්තර ළඟදීම එක් කෙරේ.",
+    "மேலும் தயாரிப்பு விவரங்கள் விரைவில் சேர்க்கப்படும்.",
+  ],
+  "This option is unavailable.": [
+    "This option is unavailable.",
+    "هذا الخيار غير متاح.",
+    "මෙම විකල්පය ලබාගත නොහැක.",
+    "இந்த விருப்பம் கிடைக்கவில்லை.",
+  ],
+  "This quantity is not available.": [
+    "This quantity is not available.",
+    "هذه الكمية غير متاحة.",
+    "මෙම ප්‍රමාණය ලබාගත නොහැක.",
+    "இந்த அளவு கிடைக்கவில்லை.",
+  ],
+  "Choose a quantity between 1 and 20.": [
+    "Choose a quantity between 1 and 20.",
+    "اختر كمية بين 1 و20.",
+    "1 සහ 20 අතර ප්‍රමාණයක් තෝරන්න.",
+    "1 முதல் 20 வரை அளவைத் தேர்ந்தெடுக்கவும்.",
+  ],
+  Availability: ["Availability", "التوفر", "ලබාගත හැකි බව", "கிடைக்கும் நிலை"],
+  "All availability": [
+    "All availability",
+    "جميع حالات التوفر",
+    "සියලු තත්ත්වයන්",
+    "அனைத்து நிலைகளும்",
+  ],
+  "Available to order": [
+    "Available to order",
+    "متاح للطلب",
+    "ඇණවුම් කළ හැක",
+    "ஆர்டர் செய்யக் கிடைக்கும்",
+  ],
+  "Sold out": ["Sold out", "نفدت الكمية", "තොග අවසන්", "விற்றுத் தீர்ந்தது"],
+  "Your bag is empty or contains unavailable items. Return to your bag to update it.":
+    [
+      "Your bag is empty or contains unavailable items. Return to your bag to update it.",
+      "حقيبتك فارغة أو تحتوي على منتجات غير متاحة. ارجع إلى الحقيبة لتحديثها.",
+      "ඔබේ බෑගය හිස් හෝ ලබාගත නොහැකි නිෂ්පාදන ඇත. එය යාවත්කාලීන කිරීමට බෑගයට යන්න.",
+      "உங்கள் பை காலியாக உள்ளது அல்லது கிடைக்காத பொருட்கள் உள்ளன. புதுப்பிக்க பைக்குத் திரும்பவும்.",
+    ],
+  "Preview piece. Name and price are temporary; product details are being finalized.":
+    [
+      "Preview piece. Name and price are temporary; product details are being finalized.",
+      "منتج للمعاينة. الاسم والسعر مؤقتان؛ تفاصيل المنتج قيد الإعداد.",
+      "පෙරදසුන් නිෂ්පාදනයකි. නම සහ මිල තාවකාලිකය; විස්තර සකස් වෙමින් පවතී.",
+      "முன்னோட்டப் பொருள். பெயரும் விலையும் தற்காலிகமானவை; விவரங்கள் தயாராகின்றன.",
+    ],
+  "Ordering is not open yet. You can explore the collection and save pieces in your bag.":
+    [
+      "Ordering is not open yet. You can explore the collection and save pieces in your bag.",
+      "الطلبات غير متاحة بعد. يمكنك تصفح المجموعة وحفظ المنتجات في حقيبتك.",
+      "ඇණවුම් තවම විවෘත නැත. එකතුව බලා ඔබේ බෑගයට නිෂ්පාදන එක් කළ හැක.",
+      "ஆர்டர்கள் இன்னும் திறக்கப்படவில்லை. தொகுப்பைப் பார்த்து பொருட்களைப் பையில் சேமிக்கலாம்.",
+    ],
+  "Your details are used to process and deliver this order. No online payment is collected. Delivery arrangements will be confirmed with you.":
+    [
+      "Your details are used to process and deliver this order. No online payment is collected. Delivery arrangements will be confirmed with you.",
+      "تُستخدم بياناتك لمعالجة هذا الطلب وتوصيله. لا يُحصّل دفع إلكتروني. سنؤكد ترتيبات التوصيل معك.",
+      "මෙම ඇණවුම සැකසීමට සහ බෙදාහැරීමට ඔබේ විස්තර භාවිත කෙරේ. මාර්ගගත ගෙවීමක් අය නොකෙරේ. බෙදාහැරීමේ විධිවිධාන ඔබ සමඟ තහවුරු කෙරේ.",
+      "இந்த ஆர்டரைச் செயல்படுத்தவும் வழங்கவும் உங்கள் விவரங்கள் பயன்படுத்தப்படுகின்றன. இணையவழிப் பணம் பெறப்படாது. விநியோக ஏற்பாடுகள் உங்களுடன் உறுதிசெய்யப்படும்.",
+    ],
 };
 export const t = (key: string, l: Locale = "en") =>
   dictionary[key]?.[["en", "ar", "si", "ta"].indexOf(l)] || key;

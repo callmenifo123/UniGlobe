@@ -108,19 +108,8 @@ app.route("/", admin);
 // The admin app only matches its explicit routes; all other routes continue below.
 app.get("/api/catalog", async (c) => {
   const list = await products(c.env.DB);
-  const stock = await c.env.DB.prepare("SELECT * FROM inventory").all<any>();
-  return c.json({
-    products: list.map((p) => ({
-      ...p,
-      variants: p.variants.map((v) => ({
-        ...v,
-        stock:
-          stock.results.find(
-            (s) => s.product_id === p.id && s.variant_id === v.id,
-          )?.quantity ?? null,
-      })),
-    })),
-  });
+  c.header("Cache-Control", "no-store");
+  return c.json({ products: list });
 });
 app.post("/api/orders", async (c) => {
   if (c.req.header("Origin") !== new URL(c.req.url).origin)
@@ -213,7 +202,13 @@ app.get("*", async (c) => {
     page = "",
     structured: any = null;
   const contentId =
-    path === "/" ? "home" : path === "/fashion" ? "fashion" : path.slice(1);
+    path === "/"
+      ? "home"
+      : path === "/fashion"
+        ? "fashion"
+        : path === "/fashion/shop"
+          ? "catalog"
+          : path.slice(1);
   const content = await record(c.env.DB, "content", contentId);
   if (content) {
     title = text(content.seoTitle, l) || text(content.title, l);
@@ -234,7 +229,7 @@ app.get("*", async (c) => {
     body = fashion(content, await products(c.env.DB), l, branding);
   } else if (path === "/fashion/shop") {
     page = "fashion";
-    title = "Collection · UniGlobe Fashion";
+    title = text(content?.seoTitle, l) || "Collection · UniGlobe Fashion";
     const q = c.req.query();
     let list = await products(c.env.DB);
     if (q.q)
@@ -243,6 +238,14 @@ app.get("*", async (c) => {
       );
     if (q.category) list = list.filter((p) => p.category === q.category);
     if (q.collection) list = list.filter((p) => p.collection === q.collection);
+    if (q.availability === "available")
+      list = list.filter((p) =>
+        p.variants.some((v) => v.available && v.stock !== 0),
+      );
+    if (q.availability === "sold-out")
+      list = list.filter((p) =>
+        p.variants.every((v) => !v.available || v.stock === 0),
+      );
     if (q.sort === "price-asc")
       list.sort((a, b) => (a.salePrice ?? a.price) - (b.salePrice ?? b.price));
     if (q.sort === "price-desc")
@@ -254,23 +257,18 @@ app.get("*", async (c) => {
         "SELECT * FROM records WHERE kind IN ('categories','collections')",
       ).all<any>()
     ).results.map((r) => ({ ...JSON.parse(r.data), id: r.id, kind: r.kind }));
-    body = listing(list, l, tax, q);
+    body = listing(
+      list,
+      l,
+      tax.sort((a, b) => a.priority - b.priority),
+      q,
+      content,
+    );
   } else if (path.startsWith("/fashion/products/")) {
     page = "fashion";
     const list = await products(c.env.DB),
       p = list.find((p) => p.slug === path.split("/")[3]);
     if (!p) return c.notFound();
-    const stocks = (
-      await c.env.DB.prepare(
-        "SELECT variant_id,quantity FROM inventory WHERE product_id=?",
-      )
-        .bind(p.id)
-        .all<any>()
-    ).results;
-    p.variants = p.variants.map((v) => ({
-      ...v,
-      stock: stocks.find((s) => s.variant_id === v.id)?.quantity ?? null,
-    }));
     title = text(p.seoTitle, l) || text(p.name, l);
     description = text(p.seoDescription, l) || text(p.shortDescription, l);
     image = p.images[0] ? c.env.SITE_URL + p.images[0] : "";
@@ -291,13 +289,17 @@ app.get("*", async (c) => {
         priceCurrency: "LKR",
         price: (p.salePrice ?? p.price) / 100,
         url: c.env.SITE_URL + path,
-        availability: p.variants.some((v) => v.available && v.stock !== 0)
-          ? "https://schema.org/PreOrder"
-          : "https://schema.org/OutOfStock",
+        availability: !p.variants.some((v) => v.available && v.stock !== 0)
+          ? "https://schema.org/OutOfStock"
+          : p.variants.some(
+                (v) => v.available && v.stock !== null && v.stock > 0,
+              ) && !p.placeholder
+            ? "https://schema.org/InStock"
+            : "https://schema.org/PreOrder",
       },
     };
   } else if (path === "/bag") {
-    body = bagPage(l);
+    body = bagPage(l, await record(c.env.DB, "ordering"));
     title = "Your bag · UniGlobe Fashion";
     c.header("X-Robots-Tag", "noindex");
   } else if (path === "/checkout") {
@@ -377,7 +379,13 @@ app.get("*", async (c) => {
         footer,
         description,
         image,
-        canonical: path.startsWith("/orders/") ? "" : c.env.SITE_URL + path,
+        canonical: path.startsWith("/orders/")
+          ? ""
+          : c.env.SITE_URL +
+            path +
+            (l === "en" || ["/bag", "/checkout"].includes(path)
+              ? ""
+              : "?lang=" + l),
       },
     ),
   );

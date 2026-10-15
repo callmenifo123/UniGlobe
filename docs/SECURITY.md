@@ -10,11 +10,11 @@ All private mutations require a matching Origin and session CSRF token. Server-s
 
 ## Orders and notifications
 
-The server validates the bag against current product/variant/country availability and calculates monetary totals in integer minor units. D1 batches atomically reserve stock, insert the order and queue notifications. CHECK constraints prevent overselling; catalog and inventory revisions prevent stale admin edits from replacing newer stock. Unique idempotency keys avoid duplicate orders; a key reused with a different payload is rejected.
+The server validates the bag against current product/variant/country availability and calculates monetary totals in integer minor units. D1 batches atomically reserve stock, insert the order and queue notifications. CHECK constraints prevent overselling; catalog and inventory revisions prevent stale admin edits from replacing newer stock. Admin order updates use optimistic version checks, preventing stale status/note overwrites. Unique idempotency keys avoid duplicate orders; a key reused with a different payload is rejected.
 
 Receipt URLs are private 256-bit capabilities, not sequential order IDs. They use no-store, noindex and no-referrer headers. Treat a receipt link as private because it contains delivery information. Admin-only notes never appear in receipts or outbound customer messages.
 
-Notification delivery uses leases, retry backoff, a five-attempt cap and per-job status. Email uses an idempotency key where the configured provider supports it. Telegram has no idempotency primitive: a timeout after successful delivery or a partial long-message retry can produce duplicate notifications. The persisted order itself remains unique and valid. Telegram messages exceeding the provider limit are split without dropping order details.
+Notification delivery uses fenced leases, bounded concurrent work, retry backoff, a five-attempt cap and per-job status. Expired final attempts become failed jobs. Native email uses a stable Message-ID; HTTPS email also uses an idempotency key where the provider supports it. Telegram checkpoints acknowledged message chunks and honors rate-limit delays. Telegram has no idempotency primitive: a timeout after successful delivery or a crash before checkpointing can still produce a duplicate chunk. The persisted order itself remains unique and valid. Telegram messages exceeding the provider limit are split without dropping order details.
 
 Checkout always has server rate limits and a honeypot. Optional free Turnstile validates server-side and checks the expected hostname. A challenge/transport failure cannot silently accept a missing verification result. No contact submission endpoint is exposed; configured contact links are displayed instead.
 

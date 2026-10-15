@@ -2,41 +2,47 @@
 
 ## Current milestone — 2026-10-15
 
-Full local testing milestone. Holdings, Fashion, About, Contact and the Real Estate/Academy coming-soon pages are implemented. Production deployment is explicitly deferred by the owner; this is not a live deployment claim.
+Completed local implementation and final QA of the requested V1 scope. Cloudflare deployment remains explicitly deferred by the owner. No live deployment or real notification delivery is claimed. The local site runs at http://localhost:8787; no owner localhost testing is required to continue development.
 
-## Implemented
+## Completed
 
-- Responsive server-rendered storefront, search/filter/sort, product galleries, persistent bag, checkout and private confirmation pages. LKR 1,500 preview prices; unknown stock, sizes and materials are not invented.
-- Server-authoritative order totals; atomic order/inventory/outbox persistence; idempotency; concurrent stock protection and stale admin edit detection. Optional WhatsApp continuation happens after order persistence.
-- Email/customer/Telegram notification outbox with bounded retries, leases, delivery status and manual retry. Local transports are mocked. Email uses a configurable HTTPS adapter; native Cloudflare Email Sending integration still requires account capability/API verification.
-- Authenticated admin with required TOTP, password hashing, encrypted TOTP secrets, hashed sessions, CSRF/origin checks, throttling, audit records, protected Main Admin, scoped permissions and session revocation.
-- Editable catalog/variants/taxonomy, ordering/country settings, branding, page copy/SEO, translations, contacts/socials, notification destinations/templates, orders and admin users. Validated R2 media uploads with browser image optimization.
-- English, Arabic, Sinhala and Tamil storefront controls; RTL Arabic. Missing business translations remain visible in admin and fall back to English publicly.
-- Separate transparent-background Holdings and Fashion logos, with responsive derivatives. All eight original supplied assets remain unchanged.
-- Local setup helper, isolated test databases, GitHub Actions checks and operational/security/deployment documentation.
+- Holdings, Fashion, About, Contact, Work With UniGlobe and intentional Real Estate/Academy coming-soon experiences.
+- Configurable catalog/products/variants/gallery/taxonomy/prices/countries, search/filter/sort, availability filters, related products, persistent bag, checkout and private receipts. Fractional LKR prices display accurately. Initial four products remain editable LKR 1,500 previews with unknown facts unset.
+- Server-authoritative prices; atomic D1 order/inventory/outbox writes; unique human-readable order numbers; idempotency and concurrent stock protection. WhatsApp is optional after persistence.
+- Native Cloudflare `ORDER_EMAIL` binding implementation plus optional HTTPS email adapter; company/customer receipts; Telegram Bot API transport; configurable recipients, sender, destinations and templates. All external delivery is tested with mocks.
+- Durable notification snapshots, bounded concurrent dispatch, fenced leases, exponential retries, Telegram rate-limit handling and acknowledged-chunk resume. Interrupted final attempts become visible failures; manual retry is available.
+- Secure Main Admin bootstrap, required password/TOTP login, granular server permissions, protected Main Admin, encrypted TOTP, hashed sessions, CSRF/origin checks, throttling, credential/session management and audit history.
+- Admin catalog/content/branding/contact/social/translation/order/user management, including configurable campaign images and collaboration button destinations. Orders have search, filters, pagination, archiving and optimistic version checks to prevent overwritten edits.
+- Validated R2 image upload, browser optimization and an accessible visual image picker for reusing uploaded or supplied assets in products, pages and branding.
+- English/Arabic/Sinhala/Tamil storefront controls and editable business translations; Arabic RTL. Missing business translations explicitly fall back to English and are marked in admin.
+- Configurable important-page/product metadata, catalog SEO, canonical language URLs, hreflang, sitemap, robots and structured data. Admin and receipts are excluded from indexing.
+- Transparent Holdings/Fashion logo derivatives and responsive images. All eight original supplied assets are unchanged.
+- Responsive layouts, keyboard/focus/reduced-motion handling, contrast fixes, CI and setup/architecture/security/deployment/notification documentation.
 
-## Verification
+## Final verification
 
-- TypeScript check; 46 Workers-runtime tests; eight Chromium end-to-end journeys; Worker dry-run build.
-- Tests cover authorization/CSRF/TOTP, owner protection, translation-only navigation and writes, inventory concurrency, order idempotency, notification mocks, upload validation, checkout, admin editing and mobile/RTL layouts.
-- Desktop/mobile screenshots inspected across the public site, product, checkout, receipt and admin. Admin tables scroll horizontally on small screens while preserving readable columns.
-- Production dependency audit reports no vulnerabilities. Original asset diff is empty.
+- TypeScript check, **54 Workers-runtime tests**, **12 Chromium browser journeys**, Worker dry-run build and local migrations pass.
+- Browser coverage includes all four languages, Arabic RTL, 320px/390px mobile and tablet layouts, catalog/bag/checkout/receipt flows, admin editing, media upload/reuse and order handling.
+- Automated WCAG A/AA checks pass across 16 key public/admin pages. These supplement visual review; they are not an independent accessibility certification.
+- Desktop/mobile screenshots visually inspected for Holdings/Fashion, product, bag, checkout, receipt, About/Contact, both coming-soon pages, admin products/orders and the media picker.
+- Production dependency audit: zero reported vulnerabilities. Original-asset diff and Git whitespace checks pass.
 
-## Local manual testing
+## Resources and local state
 
-Server: http://localhost:8787. Fashion: http://localhost:8787/fashion. Admin setup: http://localhost:8787/admin/setup.
+Dedicated planned names: `uniglobe-website`, `uniglobe-website-db`, `uniglobe-website-media`. Ten migrations apply to local D1; browser tests use a separate temporary database and do not populate the development catalog with test products/orders.
 
-Follow README.md to use the private local bootstrap token from the ignored `.dev.vars` file, create Main Admin and enroll an authenticator. No default admin password is committed. Ordering starts closed; enable it in the local admin to test checkout with dummy customer data. Test catalog/bag, all four language selectors, mobile layout, admin product/content changes and order management.
+Local D1/R2 and random local-only secrets are ignored by Git. README documents setup. No default admin password is supplied; the owner chooses Main Admin credentials and enrolls TOTP using the private bootstrap token. Ordering defaults closed until business content is reviewed. The server must be restarted with `npm run dev` if this environment stops.
 
-## Deferred before production launch
+No production resources, DNS, MX/SPF/DKIM/DMARC, Email Routing or existing UniGlobe Mail services have been modified.
 
-- Cloudflare account/zone inspection and separate website Workers/D1/R2 provisioning; production domain bindings, secrets and deployment validation.
-- Verify Cloudflare Email Sending capability and configure the actual email transport/verified sender; configure Telegram and optional Turnstile, then test real delivery. Local mocked delivery does not prove live integration.
-- Owner review of real prices, inventory/variants, service countries, contacts, policies, business copy and native-speaker translations. Ordering remains closed until reviewed.
-- Complete the deployment checklist, including backups and live security/integration checks, in docs/DEPLOYMENT.md.
+## Only remaining external or owner-dependent work
 
-No production resources, DNS, MX/SPF/DKIM/DMARC, Email Routing or existing UniGlobe Mail services have been modified. Resource configuration is exclusively for a separate website application.
+1. Supply Cloudflare deployment access (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) to inspect resources, provision the separate website bindings, set production secrets, bind the explicit apex/admin hostnames and verify the deployed service without affecting Mail.
+2. Verify the account's native Email Sending entitlement, binding contract, approved sender and arbitrary customer-receipt support; configure recipients. Supply Telegram bot/chat settings, the WhatsApp contact number and optional free Turnstile keys. Perform controlled live delivery checks once these exist. See `docs/NOTIFICATIONS.md`.
+3. Owner supplies/reviews actual product names/prices/stock/variants, delivery coverage/terms, contacts/socials, factual business copy, privacy/retention choices and missing business translations/native-speaker review. Owner enrolls the production Main Admin authenticator. Then complete the documented launch checklist and open ordering.
+
+No known unfinished local implementation blocker remains. Native email/Telegram mocks cannot establish real deliverability or Cloudflare account entitlement. At-least-once notification delivery can duplicate a send after an ambiguous timeout; persisted orders remain unique.
 
 ## Git checkpoints
 
-Previous foundation checkpoint: `34f3432`. Completed and validated local implementation checkpoint: `b4b607b`. Use `git log -1` for the latest documentation checkpoint.
+Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. The final implementation checkpoint is recorded in the following status commit; `git log -1` identifies the latest repository checkpoint.

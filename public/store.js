@@ -17,10 +17,23 @@
     );
   const money = (n) =>
     new Intl.NumberFormat(
-      document.documentElement.lang === "ar" ? "ar-SA" : "en-LK",
-      { style: "currency", currency: "LKR", maximumFractionDigits: 0 },
+      { ar: "ar-SA", si: "si-LK", ta: "ta-LK" }[
+        document.documentElement.lang
+      ] || "en-LK",
+      {
+        style: "currency",
+        currency: "LKR",
+        minimumFractionDigits: n % 100 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+      },
     ).format(n / 100);
   let catalog;
+  let memoryBag = [];
+  let pendingKey;
+  const name = (p) =>
+    p?.name?.[document.documentElement.lang] ||
+    p?.name?.en ||
+    tr("Unavailable product");
   const read = () => {
     try {
       const v = JSON.parse(localStorage.getItem("ug-bag") || "[]");
@@ -28,6 +41,8 @@
         ? v
             .filter(
               (x) =>
+                x &&
+                typeof x === "object" &&
                 typeof x.productId === "string" &&
                 typeof x.variantId === "string" &&
                 Number.isInteger(x.quantity) &&
@@ -37,11 +52,18 @@
             .slice(0, 30)
         : [];
     } catch {
-      return [];
+      return memoryBag;
     }
   };
   const write = (items) => {
-    localStorage.setItem("ug-bag", JSON.stringify(items));
+    memoryBag = items;
+    try {
+      localStorage.setItem("ug-bag", JSON.stringify(items));
+    } catch {
+      toast(
+        "Enable browser storage to keep your bag when moving between pages.",
+      );
+    }
     document
       .querySelectorAll("[data-bag-count]")
       .forEach(
@@ -71,7 +93,13 @@
         ...line,
         p,
         v,
-        available: !!p && !!v && v.available && v.stock !== 0,
+        available:
+          !!p &&
+          !!v &&
+          v.available &&
+          (v.stock === null || v.stock >= line.quantity) &&
+          (!$("#checkout-form") ||
+            p.countries.includes($("#checkout-form").elements.country.value)),
       };
     });
   }
@@ -85,23 +113,25 @@
     const body = lines
       .map(
         (x, i) =>
-          `<div class="bag-item">${x.p?.images[0] ? `<img src="${esc(x.p.images[0])}" alt="${esc(x.p.name.en)}" width="110" height="140">` : ""}<div><h3>${esc(x.p?.name?.[document.documentElement.lang] || x.p?.name.en || "Unavailable product")}</h3><p>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / ") || "Details to be confirmed")}</p>${!x.available ? '<p class="form-error">No longer available</p>' : ""}<label>Quantity <input type="number" data-quantity="${i}" min="1" max="20" value="${x.quantity}" aria-label="Quantity for ${esc(x.p?.name.en)}"></label><button class="text-button" data-remove="${i}">${esc(tr("Remove"))}</button></div><strong>${x.p ? money((x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`,
+          `<div class="bag-item">${x.p?.images[0] ? `<img src="${esc(x.p.images[0])}" alt="${esc(name(x.p))}" width="110" height="140">` : ""}<div><h3>${esc(name(x.p))}</h3><p>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / ") || tr("Details to be confirmed"))}</p>${!x.available ? `<p class="form-error">${esc(tr("No longer available"))}</p>` : ""}<label>${esc(tr("Quantity"))} <input type="number" data-quantity="${i}" min="1" max="20" value="${x.quantity}" aria-label="${esc(tr("Quantity"))}: ${esc(name(x.p))}"></label><button class="text-button" data-remove="${i}">${esc(tr("Remove"))}</button></div><strong>${x.p ? money((x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`,
       )
       .join("");
     if ($("#bag-content"))
       $("#bag-content").innerHTML = lines.length
-        ? `<div class="bag-layout"><div>${body}</div><aside class="order-summary"><h2>${esc(tr("Your selection"))}</h2><div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p>Delivery arrangements are confirmed after ordering. No online payment is collected.</p>${lines.every((x) => x.available) ? `<a class="button wide" href="/checkout">${esc(tr("Continue to checkout"))} ↗</a>` : '<p class="notice">Remove unavailable items to continue.</p>'}<a class="underlink" href="/fashion/shop">${esc(tr("Continue exploring"))}</a></aside></div>`
-        : `<div class="empty-state"><h2>A little room for possibility.</h2><p>${esc(tr("Your bag is currently empty."))}</p><a class="button" href="/fashion/shop">${esc(tr("Explore the collection"))} ↗</a></div>`;
+        ? `<div class="bag-layout"><div>${body}</div><aside class="order-summary"><h2>${esc(tr("Your selection"))}</h2><div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p dir="auto">${esc($("#bag-content")?.dataset.deliveryNote || tr("Delivery arrangements will be confirmed with you."))}</p>${lines.every((x) => x.available) ? `<a class="button wide" href="/checkout">${esc(tr("Continue to checkout"))} ↗</a>` : `<p class="notice">${esc(tr("Remove unavailable items to continue."))}</p>`}<a class="underlink" href="/fashion/shop">${esc(tr("Continue exploring"))}</a></aside></div>`
+        : `<div class="empty-state"><h2>${esc(tr("Your selection"))}</h2><p>${esc(tr("Your bag is currently empty."))}</p><a class="button" href="/fashion/shop">${esc(tr("Explore the collection"))} ↗</a></div>`;
     if ($("#checkout-summary")) {
       $("#checkout-summary").innerHTML =
-        `<h2>${esc(tr("Your selection"))}</h2>${lines.map((x) => `<div class="receipt-item"><span>${esc(x.p?.name.en || "Unavailable product")}<small>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / "))} · Qty ${x.quantity}</small></span><strong>${x.p ? money((x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`).join("")}<div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p>${esc(tr("Delivery arrangements will be confirmed with you."))}</p><a href="/bag" class="underlink">${esc(tr("Edit bag"))}</a>`;
-      if (!lines.length || lines.some((x) => !x.available)) {
-        $(
-          "#checkout-form button[type=submit], #checkout-form > button",
-        ).disabled = true;
-        $("#checkout-form .form-error").textContent =
-          "Your bag is empty or contains unavailable items. Return to your bag to update it.";
-      }
+        `<h2>${esc(tr("Your selection"))}</h2>${lines.map((x) => `<div class="receipt-item"><span>${esc(name(x.p))}<small>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / "))} · ${esc(tr("Quantity"))} ${x.quantity}</small></span><strong>${x.p ? money((x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`).join("")}<div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p>${esc(tr("Delivery arrangements will be confirmed with you."))}</p><a href="/bag" class="underlink">${esc(tr("Edit bag"))}</a>`;
+      const invalid = !lines.length || lines.some((x) => !x.available);
+      const form = $("#checkout-form");
+      form.querySelector("button").disabled =
+        invalid || form.dataset.orderingEnabled !== "true";
+      form.querySelector(".form-error").textContent = invalid
+        ? tr(
+            "Your bag is empty or contains unavailable items. Return to your bag to update it.",
+          )
+        : "";
     }
   }
   write(read());
@@ -119,7 +149,7 @@
       const p = catalog.find((p) => p.id === productId),
         v = p?.variants.find((v) => v.id === variantId);
       if (!v || !v.available || v.stock === 0)
-        throw new Error("This option is unavailable.");
+        throw new Error(tr("This option is unavailable."));
       const items = read();
       const existing = items.find(
         (x) => x.productId === productId && x.variantId === variantId,
@@ -131,7 +161,9 @@
         combined > 20 ||
         (v.stock !== null && combined > v.stock)
       )
-        throw new Error("This quantity is not available.");
+        throw new Error(tr("This quantity is not available."));
+      if (!existing && items.length >= 30)
+        throw new Error("Your bag can contain up to 30 different options.");
       if (existing) existing.quantity = combined;
       else items.push({ productId, variantId, quantity });
       write(items);
@@ -153,16 +185,21 @@
     if (e.target.matches("[data-quantity]")) {
       const n = Number(e.target.value);
       if (!Number.isInteger(n) || n < 1 || n > 20) {
-        toast("Choose a quantity between 1 and 20.");
-        render();
+        toast(tr("Choose a quantity between 1 and 20."));
+        render().catch((error) => toast(error.message));
         return;
       }
       const items = read();
-      items[Number(e.target.dataset.quantity)].quantity = n;
+      const item = items[Number(e.target.dataset.quantity)];
+      if (!item) return;
+      item.quantity = n;
       write(items);
       render().catch((e) => toast(e.message));
     }
   });
+  $("#checkout-form [name=country]")?.addEventListener("change", () =>
+    render().catch((error) => toast(error.message)),
+  );
   if ($("#bag-content") || $("#checkout-summary"))
     render().catch((e) => toast(e.message));
   $("#checkout-form")?.addEventListener("submit", async (e) => {
@@ -173,10 +210,16 @@
     button.disabled = true;
     error.textContent = "";
     try {
-      let key = sessionStorage.getItem("ug-order-key");
+      let key = pendingKey;
+      try {
+        key = sessionStorage.getItem("ug-order-key") || key;
+      } catch {}
       if (!key) {
         key = crypto.randomUUID();
-        sessionStorage.setItem("ug-order-key", key);
+        pendingKey = key;
+        try {
+          sessionStorage.setItem("ug-order-key", key);
+        } catch {}
       }
       const customer = Object.fromEntries(new FormData(f));
       const website = customer.website;
@@ -197,7 +240,10 @@
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || "Could not place your order.");
       write([]);
-      sessionStorage.removeItem("ug-order-key");
+      pendingKey = undefined;
+      try {
+        sessionStorage.removeItem("ug-order-key");
+      } catch {}
       location.assign(data.url);
     } catch (e) {
       error.textContent = e.message;
@@ -208,7 +254,8 @@
   window.addEventListener("storage", (e) => {
     if (e.key === "ug-bag") {
       write(read());
-      if ($("#bag-content")) render();
+      if ($("#bag-content") || $("#checkout-summary"))
+        render().catch((error) => toast(error.message));
     }
   });
 })();

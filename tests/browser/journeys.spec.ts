@@ -1,4 +1,5 @@
 import { test, expect, request as playwrightRequest } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import * as OTPAuth from "otpauth";
@@ -133,6 +134,55 @@ test("admin safely uploads an optimized image", async ({ page, context }) => {
   const response = await page.request.get(path);
   expect(response.headers()["content-type"]).toBe("image/webp");
 });
+test("admin reuses media visually and saves branding without copying paths", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies(cookies);
+  await page.goto("/admin/branding");
+  const logo = page.locator('input[name="holdingsLogo"]');
+  await logo.locator("xpath=following-sibling::button[1]").click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.screenshot({
+    path: "test-results/visual/media-picker.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "UniGlobe Holdings · transparent logo" })
+    .click();
+  await expect(logo).toHaveValue("/assets/holdings-logo-transparent.webp");
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".save-status")).toHaveText("Saved successfully");
+});
+test("bag localizes controls and tolerates malformed or unavailable storage", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/fashion/products/forever-tee?lang=en");
+  await page.evaluate(() => localStorage.setItem("ug-bag", "[null,{}]"));
+  await page.reload();
+  await page.getByRole("button", { name: "Add to bag" }).click();
+  await page.goto("/bag?lang=ar");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(
+    page.getByRole("button", { name: "إزالة", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel(/الكمية/)).toHaveValue("1");
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      get() {
+        throw new DOMException("Blocked", "SecurityError");
+      },
+    });
+  });
+  await page.goto("/fashion?lang=en");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.locator(".language select").selectOption("ta");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ta");
+  expect(errors).toEqual([]);
+});
 test("admin opens local ordering; customer completes checkout before optional WhatsApp", async ({
   page,
   context,
@@ -217,6 +267,91 @@ test("admin browser pages render without horizontal overflow on mobile", async (
       path,
     ).toBe(true);
   }
+});
+test("small mobile and tablet layouts remain usable in every language", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(90000);
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const lang of ["en", "ar", "si", "ta"]) {
+      for (const path of [
+        "/",
+        "/fashion/shop",
+        "/fashion/products/forever-tee",
+        "/bag",
+        "/checkout",
+      ]) {
+        await page.goto(path + "?lang=" + lang);
+        await expect(page.locator("main h1")).toBeVisible();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth + 1,
+          ),
+          `${path} ${lang} ${width}`,
+        ).toBe(true);
+      }
+    }
+  }
+  await context.addCookies(cookies);
+  await page.setViewportSize({ width: 320, height: 900 });
+  for (const path of [
+    "/admin/products/new",
+    "/admin/orders",
+    "/admin/branding",
+    "/admin/media",
+  ]) {
+    await page.goto(path);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+      path,
+    ).toBe(true);
+  }
+});
+test("key public and admin journeys meet automated WCAG AA checks", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(90000);
+  await context.addCookies(cookies);
+  const violations: any[] = [];
+  for (const path of [
+    "/",
+    "/fashion",
+    "/fashion/shop",
+    "/fashion/products/forever-tee",
+    "/bag",
+    "/checkout?lang=ar",
+    receipt,
+    "/about",
+    "/contact",
+    "/real-estate",
+    "/academy",
+    "/admin",
+    "/admin/products",
+    "/admin/products/new",
+    "/admin/orders",
+    "/admin/branding",
+  ]) {
+    await page.goto(path);
+    const result = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .analyze();
+    violations.push(
+      ...result.violations.map((v) => ({
+        path,
+        id: v.id,
+        nodes: v.nodes.map((n) => ({
+          target: n.target,
+          summary: n.failureSummary,
+        })),
+      })),
+    );
+  }
+  expect(violations).toEqual([]);
 });
 test("capture local desktop, mobile and RTL views for manual visual review", async ({
   page,
