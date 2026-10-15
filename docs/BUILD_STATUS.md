@@ -39,4 +39,4 @@ No production resources, DNS, MX/SPF/DKIM/DMARC, Email Routing or existing UniGl
 
 ## Git checkpoints
 
-Previous foundation checkpoint: `34f3432`. The completed local implementation checkpoint is recorded below after validation. Use `git log -1` for the latest documentation checkpoint.
+Previous foundation checkpoint: `34f3432`. Completed and validated local implementation checkpoint: `b4b607b`. Use `git log -1` for the latest documentation checkpoint.
