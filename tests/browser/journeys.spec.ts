@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   const setup = await api.get("/admin/setup");
   expect(setup.status()).toBe(200);
   const html = await setup.text();
-  const secret = html.match(/name="secret" value="([A-Z2-7]+)"/)![1];
+  const secret = html.match(/name="secret"\s+value="([A-Z2-7]+)"/)![1];
   const bootstrap = readFileSync(".dev.vars", "utf8")
     .match(/^BOOTSTRAP_TOKEN=(.*)$/m)![1]
     .trim();
@@ -413,4 +413,62 @@ test("capture local desktop, mobile and RTL views for manual visual review", asy
       fullPage: true,
     });
   }
+});
+
+test("separate admin completes temporary-password and QR authenticator onboarding", async ({
+  page,
+}) => {
+  const api = await playwrightRequest.newContext({
+    baseURL: base,
+    extraHTTPHeaders: { Origin: base, "X-CSRF-Token": csrf },
+    storageState: { cookies, origins: [] },
+  });
+  const username = "new-colleague";
+  const created = await api.post("/api/admin/users", {
+    data: {
+      username,
+      email: "colleague@example.test",
+      displayName: "New Colleague",
+    },
+  });
+  expect(created.status()).toBe(200);
+  const { temporaryPassword } = await created.json();
+  await page.goto("/admin/login");
+  await page.getByLabel("Username or email").fill(username);
+  await page.getByLabel("Password", { exact: true }).fill(temporaryPassword);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Make it yours." }),
+  ).toBeVisible();
+  await page
+    .getByLabel("New permanent password")
+    .fill(randomBytes(20).toString("hex"));
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Secure your account." }),
+  ).toBeVisible();
+  await expect(page.locator(".auth-qr svg")).toBeVisible();
+  const secret = (await page.locator(".totp-key").textContent())!.trim();
+  const otp = new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(secret) });
+  await page
+    .getByLabel("Authenticator code", { exact: true })
+    .fill(otp.generate());
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Save your recovery codes" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "I have saved these securely" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Good to see you, new-colleague." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Admin users", exact: true }),
+  ).toHaveCount(0);
+  await page.goto("/admin/security");
+  await expect(
+    page.getByText("Authenticator enrolled · Required by policy"),
+  ).toBeVisible();
+  await api.dispose();
 });

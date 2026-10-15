@@ -110,20 +110,7 @@ export const checkoutSchema = z.object({
   }),
   website: z.string().max(0).default(""),
 });
-export const permissions = [
-  "products.read",
-  "products.write",
-  "orders.read",
-  "orders.write",
-  "content.write",
-  "media.write",
-  "branding.write",
-  "contacts.write",
-  "translations.write",
-  "admins.write",
-  "settings.write",
-  "audit.read",
-] as const;
+export { capabilities as permissions } from "./permissions";
 export const statuses = [
   "New",
   "Confirmed",

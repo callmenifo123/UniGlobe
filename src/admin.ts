@@ -1,3 +1,4 @@
+import { identity, identityUsers, identitySecurity } from "./identity";
 import { Hono } from "hono";
 import { emailConfigured } from "./email";
 import { suppliedMedia } from "./media";
@@ -98,269 +99,7 @@ admin.use("*", async (c, next) => {
   }
   await next();
 });
-admin.get("/admin/login", (c) =>
-  c.html(shell("Sign in · UniGlobe", authPage(), { admin: true })),
-);
-admin.get("/admin/setup", async (c) => {
-  if (await c.env.DB.prepare("SELECT id FROM admins WHERE is_main=1").first())
-    return c.notFound();
-  if (!c.env.BOOTSTRAP_TOKEN || !c.env.AUTH_KEY)
-    return c.html(
-      shell(
-        "Setup unavailable",
-        html`<main id="main" class="auth-page">
-          <h1>Setup not configured.</h1>
-          <p>
-            Configure the AUTH_KEY and BOOTSTRAP_TOKEN server secrets before
-            creating Main Admin.
-          </p>
-        </main>`,
-        { admin: true },
-      ),
-      503,
-    );
-  return c.html(
-    shell("Set up Main Admin", authPage(true, newTotp()), { admin: true }),
-  );
-});
-admin.post("/api/auth/setup", async (c) => {
-  if (
-    !(await rate(
-      c.env.DB,
-      "setup:" + (c.req.header("CF-Connecting-IP") || "local"),
-      5,
-      900,
-    ))
-  )
-    return c.json({ error: "Too many attempts. Try again later." }, 429);
-  if (!c.env.BOOTSTRAP_TOKEN || !c.env.AUTH_KEY)
-    return c.json({ error: "Server secrets not configured" }, 503);
-  const data = authBody
-    .extend({
-      bootstrap: z.string(),
-      secret: z.string().regex(/^[A-Z2-7]{32}$/),
-    })
-    .parse(await c.req.json());
-  if (!equal(data.bootstrap, c.env.BOOTSTRAP_TOKEN))
-    return c.json({ error: "Setup credentials invalid" }, 403);
-  if (verifyTotp(data.secret, data.code) === null)
-    return c.json({ error: "Authenticator code invalid" }, 400);
-  if (await c.env.DB.prepare("SELECT id FROM admins WHERE is_main=1").first())
-    return c.json({ error: "Setup is already complete" }, 409);
-  const id = crypto.randomUUID();
-  try {
-    await c.env.DB.prepare(
-      "INSERT INTO admins(id,username,password_hash,totp,permissions,is_main) VALUES(?,?,?,?,?,1)",
-    )
-      .bind(
-        id,
-        data.username,
-        await passwordHash(data.password),
-        await encrypt(data.secret, c.env.AUTH_KEY),
-        JSON.stringify(permissions),
-      )
-      .run();
-  } catch {
-    return c.json({ error: "Setup is already complete" }, 409);
-  }
-  await audit(c.env.DB, id, "admin.bootstrap", id);
-  await makeSession(c, { id });
-  return c.json({ ok: true });
-});
-admin.post("/api/auth/login", async (c) => {
-  const data = authBody.parse(await c.req.json());
-  const ip = c.req.header("CF-Connecting-IP") || "local";
-  if (
-    !(await rate(c.env.DB, "login-ip:" + ip, 30, 900)) ||
-    !(await rate(
-      c.env.DB,
-      "login-user:" + (await hash(data.username.toLowerCase())),
-      8,
-      900,
-    ))
-  )
-    return c.json(
-      { error: "Too many attempts. Try again in 15 minutes." },
-      429,
-    );
-  const u = await c.env.DB.prepare(
-    "SELECT * FROM admins WHERE username=? COLLATE NOCASE",
-  )
-    .bind(data.username)
-    .first<any>();
-  let valid = false;
-  let step: number | null = null;
-  if (u && !u.disabled) {
-    valid = await passwordValid(data.password, u.password_hash);
-    if (valid)
-      step = verifyTotp(await decrypt(u.totp, c.env.AUTH_KEY), data.code);
-  } else {
-    await passwordHash(data.password, "00000000000000000000000000000000");
-  }
-  if (!valid || step === null) {
-    await audit(
-      c.env.DB,
-      null,
-      "auth.failed",
-      "",
-      await hash(data.username.toLowerCase()),
-    );
-    return c.json(
-      { error: "Username, password or authenticator code is incorrect" },
-      401,
-    );
-  }
-  try {
-    await c.env.DB.prepare("INSERT INTO totp_used(admin_id,step) VALUES(?,?)")
-      .bind(u.id, step)
-      .run();
-  } catch {
-    return c.json(
-      {
-        error:
-          "This authenticator code was already used. Wait for the next code.",
-      },
-      401,
-    );
-  }
-  const old = getCookie(c, cookieName(c));
-  if (old)
-    await c.env.DB.prepare("DELETE FROM sessions WHERE token_hash=?")
-      .bind(await hash(old))
-      .run();
-  await makeSession(c, u);
-  await audit(c.env.DB, u.id, "auth.login", u.id);
-  return c.json({ ok: true });
-});
-admin.use("*", async (c, next) => {
-  if (
-    !c.req.path.startsWith("/admin") &&
-    !c.req.path.startsWith("/api/admin") &&
-    !c.req.path.startsWith("/api/auth")
-  )
-    return next();
-  const u = await session(c.env, getCookie(c, cookieName(c)));
-  if (!u) {
-    if (c.req.path.startsWith("/api/"))
-      return c.json({ error: "Sign in required" }, 401);
-    return c.redirect("/admin/login");
-  }
-  c.set("user", u);
-  if (!["GET", "HEAD"].includes(c.req.method)) {
-    let token = c.req.header("X-CSRF-Token");
-    if (!token && c.req.path === "/api/auth/logout")
-      token = (await c.req.parseBody()).csrf as string;
-    if (!token || !equal(token, u.csrf))
-      return c.json({ error: "Invalid CSRF token" }, 403);
-  }
-  await next();
-});
-admin.post("/api/auth/logout", async (c) => {
-  await c.env.DB.prepare("DELETE FROM sessions WHERE token_hash=?")
-    .bind(c.get("user").token_hash)
-    .run();
-  deleteCookie(c, cookieName(c), { path: "/" });
-  return c.redirect("/admin/login", 303);
-});
-admin.post("/api/admin/password", async (c) => {
-  const d = z
-    .object({
-      current: z.string().max(128),
-      password: z.string().min(12).max(128),
-      code: z.string(),
-    })
-    .parse(await c.req.json());
-  const user = c.get("user");
-  if (!(await rate(c.env.DB, "change-password:" + user.id, 5, 900)))
-    return c.json({ error: "Try again later" }, 429);
-  const u = await c.env.DB.prepare("SELECT * FROM admins WHERE id=?")
-    .bind(user.id)
-    .first<any>();
-  if (
-    !(await passwordValid(d.current, u.password_hash)) ||
-    verifyTotp(await decrypt(u.totp, c.env.AUTH_KEY), d.code) === null
-  )
-    return c.json({ error: "Current password or code is incorrect" }, 403);
-  await c.env.DB.batch([
-    c.env.DB.prepare("UPDATE admins SET password_hash=? WHERE id=?").bind(
-      await passwordHash(d.password),
-      user.id,
-    ),
-    c.env.DB.prepare("DELETE FROM sessions WHERE admin_id=?").bind(user.id),
-  ]);
-  await makeSession(c, user);
-  await audit(c.env.DB, user.id, "auth.password_changed", user.id);
-  return c.json({ ok: true, reload: true });
-});
-admin.post("/api/admin/totp/start", async (c) => {
-  const user = c.get("user");
-  if (!(await rate(c.env.DB, "totp-change:" + user.id, 5, 900)))
-    return c.json({ error: "Try again later" }, 429);
-  const data = z
-    .object({ password: z.string().max(128), code: z.string() })
-    .parse(await c.req.json());
-  const owner = await c.env.DB.prepare(
-    "SELECT password_hash,totp FROM admins WHERE id=?",
-  )
-    .bind(user.id)
-    .first<any>();
-  if (
-    !(await passwordValid(data.password, owner.password_hash)) ||
-    verifyTotp(await decrypt(owner.totp, c.env.AUTH_KEY), data.code) === null
-  )
-    return c.json(
-      { error: "Password or authenticator code is incorrect" },
-      403,
-    );
-  const secret = newTotp();
-  await c.env.DB.prepare(
-    "UPDATE sessions SET pending_totp=?,pending_totp_expires=? WHERE token_hash=?",
-  )
-    .bind(
-      await encrypt(secret, c.env.AUTH_KEY),
-      Date.now() + 600000,
-      user.token_hash,
-    )
-    .run();
-  return c.json({ ok: true, secret });
-});
-admin.post("/api/admin/totp/confirm", async (c) => {
-  const user = c.get("user");
-  if (!(await rate(c.env.DB, "totp-confirm:" + user.id, 5, 600)))
-    return c.json({ error: "Try again later" }, 429);
-  const data = z.object({ code: z.string() }).parse(await c.req.json());
-  const row = await c.env.DB.prepare(
-    "SELECT pending_totp,pending_totp_expires FROM sessions WHERE token_hash=?",
-  )
-    .bind(user.token_hash)
-    .first<any>();
-  if (
-    !row?.pending_totp ||
-    row.pending_totp_expires < Date.now() ||
-    verifyTotp(await decrypt(row.pending_totp, c.env.AUTH_KEY), data.code) ===
-      null
-  )
-    return c.json({ error: "Setup expired or code is incorrect" }, 400);
-  await c.env.DB.batch([
-    c.env.DB.prepare("UPDATE admins SET totp=? WHERE id=?").bind(
-      row.pending_totp,
-      user.id,
-    ),
-    c.env.DB.prepare("DELETE FROM sessions WHERE admin_id=?").bind(user.id),
-    c.env.DB.prepare("DELETE FROM totp_used WHERE admin_id=?").bind(user.id),
-  ]);
-  await makeSession(c, user);
-  await audit(c.env.DB, user.id, "auth.totp_changed", user.id);
-  return c.json({ ok: true, reload: true });
-});
-admin.delete("/api/admin/sessions/:id", async (c) => {
-  await c.env.DB.prepare(
-    "DELETE FROM sessions WHERE token_hash=? AND admin_id=?",
-  )
-    .bind(c.req.param("id"), c.get("user").id)
-    .run();
-  return c.json({ ok: true });
-});
+admin.route("/", identity);
 admin.post("/api/admin/products", required("products.write"), async (c) => {
   const p = productSchema.parse(await c.req.json());
   const id = crypto.randomUUID();
@@ -776,135 +515,6 @@ admin.post(
     return c.json({ ok: true });
   },
 );
-admin.post("/api/admin/users", required("admins.write"), async (c) => {
-  const d = z
-    .object({
-      username: z.string().trim().min(3).max(120),
-      password: z.string().min(12).max(128),
-      permissions: z.array(z.enum(permissions)).max(permissions.length),
-    })
-    .parse(await c.req.json());
-  const actor = c.get("user");
-  if (
-    !actor.is_main &&
-    (d.permissions.includes("admins.write") ||
-      d.permissions.some((p) => !JSON.parse(actor.permissions).includes(p)))
-  )
-    return c.json(
-      { error: "You cannot grant permissions beyond your own access" },
-      403,
-    );
-  const id = crypto.randomUUID(),
-    secret = newTotp();
-  await c.env.DB.prepare(
-    "INSERT INTO admins(id,username,password_hash,totp,permissions) VALUES(?,?,?,?,?)",
-  )
-    .bind(
-      id,
-      d.username,
-      await passwordHash(d.password),
-      await encrypt(secret, c.env.AUTH_KEY),
-      JSON.stringify(d.permissions),
-    )
-    .run();
-  await audit(c.env.DB, actor.id, "admin.created", id);
-  return c.json({ ok: true, secret });
-});
-admin.put(
-  "/api/admin/users/:id/permissions",
-  required("admins.write"),
-  async (c) => {
-    const actor = c.get("user");
-    const target = await c.env.DB.prepare(
-      "SELECT id,is_main,permissions FROM admins WHERE id=?",
-    )
-      .bind(c.req.param("id"))
-      .first<any>();
-    if (!target) return c.notFound();
-    if (target.is_main || target.id === actor.id)
-      return c.json({ error: "This admin is protected" }, 403);
-    const data = z
-      .object({
-        permissions: z.array(z.enum(permissions)).max(permissions.length),
-      })
-      .parse(await c.req.json());
-    const own = JSON.parse(actor.permissions);
-    if (
-      !actor.is_main &&
-      (JSON.parse(target.permissions).some((p: string) => !own.includes(p)) ||
-        data.permissions.some((p) => !own.includes(p)) ||
-        data.permissions.includes("admins.write"))
-    )
-      return c.json(
-        {
-          error:
-            "You cannot grant or manage access beyond your own permissions",
-        },
-        403,
-      );
-    await c.env.DB.batch([
-      c.env.DB.prepare("UPDATE admins SET permissions=? WHERE id=?").bind(
-        JSON.stringify(data.permissions),
-        target.id,
-      ),
-      c.env.DB.prepare("DELETE FROM sessions WHERE admin_id=?").bind(target.id),
-    ]);
-    await audit(
-      c.env.DB,
-      actor.id,
-      "admin.permissions_changed",
-      target.id,
-      JSON.stringify(data.permissions),
-    );
-    return c.json({ ok: true });
-  },
-);
-admin.post(
-  "/api/admin/users/:id/toggle",
-  required("admins.write"),
-  async (c) => {
-    const u = await c.env.DB.prepare("SELECT * FROM admins WHERE id=?")
-      .bind(c.req.param("id"))
-      .first<any>();
-    if (!u) return c.notFound();
-    if (u.is_main || u.id === c.get("user").id)
-      return c.json({ error: "This admin is protected" }, 403);
-    if (
-      !c.get("user").is_main &&
-      JSON.parse(u.permissions).some(
-        (p: string) => !JSON.parse(c.get("user").permissions).includes(p),
-      )
-    )
-      return c.json({ error: "Permission denied" }, 403);
-    await c.env.DB.batch([
-      c.env.DB.prepare("UPDATE admins SET disabled=? WHERE id=?").bind(
-        u.disabled ? 0 : 1,
-        u.id,
-      ),
-      c.env.DB.prepare("DELETE FROM sessions WHERE admin_id=?").bind(u.id),
-    ]);
-    await audit(c.env.DB, c.get("user").id, "admin.access_changed", u.id);
-    return c.json({ ok: true });
-  },
-);
-admin.delete("/api/admin/users/:id", required("admins.write"), async (c) => {
-  const u = await c.env.DB.prepare("SELECT * FROM admins WHERE id=?")
-    .bind(c.req.param("id"))
-    .first<any>();
-  if (!u) return c.notFound();
-  if (u.is_main || u.id === c.get("user").id)
-    return c.json({ error: "This admin is protected" }, 403);
-  if (
-    !c.get("user").is_main &&
-    JSON.parse(u.permissions).some(
-      (p: string) => !JSON.parse(c.get("user").permissions).includes(p),
-    )
-  )
-    return c.json({ error: "Permission denied" }, 403);
-  await c.env.DB.prepare("DELETE FROM admins WHERE id=?").bind(u.id).run();
-  await audit(c.env.DB, c.get("user").id, "admin.deleted", u.id);
-  return c.json({ ok: true });
-});
 admin.get("/api/admin/media", async (c) => {
   if (
     !["media.write", "products.write", "branding.write", "content.write"].some(
@@ -1017,7 +627,7 @@ admin.get("/admin/:section?/:id?", async (c) => {
     contacts: "contacts.write",
     ordering: "settings.write",
     media: "media.write",
-    users: "admins.write",
+
     audit: "audit.read",
   };
   if (per[section] && !allow(user, per[section]))
@@ -1144,72 +754,23 @@ admin.get("/admin/:section?/:id?", async (c) => {
           ${suppliedMedia.map((m) => html`<div><img src="${m.path}" alt="${m.name}" loading="lazy" /><input readonly aria-label="Asset path" value="${m.path}" /></div>`)}
         </div>
       </section>`;
-  } else if (section === "users")
-    body = usersPage(
+  } else if (section === "users") {
+    if (
+      !["admins.read", "admins.create", "admins.write"].some((p) =>
+        allow(user, p),
+      )
+    )
+      return c.text("Permission denied", 403);
+    body = identityUsers(
       (
         await c.env.DB.prepare(
-          "SELECT id,username,is_main,disabled,permissions FROM admins ORDER BY is_main DESC",
+          "SELECT id,username,email,display_name,is_main,disabled,permissions,totp_policy,totp,must_reset,last_login,created_at FROM admins ORDER BY is_main DESC,created_at DESC",
         ).all()
       ).results,
-      !!user.is_main,
+      user,
     );
-  else if (section === "security") {
-    const rows = await c.env.DB.prepare(
-      "SELECT token_hash,created_at,expires_at,user_agent FROM sessions WHERE admin_id=?",
-    )
-      .bind(user.id)
-      .all<any>();
-    body = html`<div class="admin-heading"><h1>Security</h1></div>
-      <section class="panel">
-        <h2>Active sessions</h2>
-        ${rows.results.map(
-          (r) =>
-            html`<div class="content-link">
-              <span
-                >${r.token_hash === user.token_hash ? "This session" : "Other session"}<small
-                  >${r.user_agent} · Expires
-                  ${new Date(r.expires_at).toISOString()}</small
-                ></span
-              ><button
-                class="text-button"
-                data-delete="/api/admin/sessions/${r.token_hash}"
-                data-confirm="Revoke this session?"
-              >
-                Revoke
-              </button>
-            </div>`,
-        )}
-      </section>
-      <form
-        class="panel admin-editor"
-        data-api="/api/admin/password"
-        data-method="POST"
-      >
-        <h2>Change password</h2>
-        ${field("Current password", "current", "", "password", 'required autocomplete="current-password"')}${field("New password", "password", "", "password", 'required minlength="12" autocomplete="new-password"')}${field("Authenticator code", "code", "", "text", 'required pattern="[0-9]{6}"')}
-        <p class="muted">
-          Changing your password revokes all existing sessions.
-        </p>
-        <p class="form-error" role="alert"></p>
-        <button class="button">Update password</button>
-      </form>
-      <form id="totp-start" class="panel">
-        <h2>Change authenticator</h2>
-        <p>
-          Your existing authenticator remains active until you verify the new
-          setup. Other sessions will then be revoked.
-        </p>
-        ${field("Current password", "password", "", "password", 'required autocomplete="current-password"')}${field("Current authenticator code", "code", "", "text", 'required pattern="[0-9]{6}"')}
-        <p class="form-error" role="alert"></p>
-        <button class="button">Set up new authenticator</button>
-      </form>
-      <form id="totp-confirm" class="panel" hidden>
-        <h2>Verify new authenticator</h2>
-        <code id="new-totp" class="totp-key"></code
-        >${field("New authenticator code", "code", "", "text", 'required pattern="[0-9]{6}"')}
-        <p class="form-error" role="alert"></p>
-        <button class="button">Activate & revoke other sessions</button>
-      </form>`;
+  } else if (section === "security") {
+    body = await identitySecurity(c);
   } else if (section === "audit") {
     const rows = await c.env.DB.prepare(
       "SELECT * FROM audit ORDER BY id DESC LIMIT 200",

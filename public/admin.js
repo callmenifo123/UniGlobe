@@ -39,6 +39,23 @@
     if (!r.ok) throw new Error(d.error || "Request failed");
     return d;
   }
+  async function showCredentials(result) {
+    if (!result.recoveryCodes && !result.temporaryPassword) return;
+    const dialog = document.createElement("dialog");
+    dialog.className = "credential-dialog";
+    const values = result.recoveryCodes || [result.temporaryPassword];
+    dialog.innerHTML = `<h2>${result.recoveryCodes ? "Save your recovery codes" : "Temporary password"}</h2><p>${result.recoveryCodes ? "Each code can be used once instead of an authenticator code at login. Store these privately; they are shown only now." : "Share this securely with the admin. It expires in seven days and must be changed before workspace access."}</p><pre>${values.map(esc).join("\n")}</pre><button class="button">I have saved these securely</button>`;
+    document.body.append(dialog);
+    dialog.showModal();
+    await new Promise((resolve) => {
+      dialog.querySelector("button").onclick = () => {
+        dialog.close();
+        resolve();
+      };
+      dialog.addEventListener("cancel", (e) => e.preventDefault());
+    });
+    dialog.remove();
+  }
   function collect(f) {
     const d = {};
     for (const [k, v] of new FormData(f)) {
@@ -64,12 +81,13 @@
     const b = f.querySelector("button");
     b.disabled = true;
     try {
-      await request(
+      const result = await request(
         "/api/auth/" + f.dataset.mode,
         "POST",
         Object.fromEntries(new FormData(f)),
       );
-      location.assign("/admin");
+      await showCredentials(result);
+      location.assign(result.redirect || "/admin");
     } catch (e) {
       f.querySelector(".form-error").textContent = e.message;
       b.disabled = false;
@@ -119,6 +137,7 @@
           d.countries = new FormData(f).getAll("countries");
         }
         const result = await request(f.dataset.api, f.dataset.method, d);
+        await showCredentials(result);
         if (result.version && f.elements.version)
           f.elements.version.value = result.version;
         const status = f.querySelector(".save-status");
@@ -306,9 +325,13 @@
         );
         if (stage === "start") {
           $("#new-totp").textContent = result.secret;
+          if ($("#new-totp-qr")) $("#new-totp-qr").innerHTML = result.qr;
           $("#totp-confirm").hidden = false;
           f.hidden = true;
-        } else location.reload();
+        } else {
+          await showCredentials(result);
+          location.assign(result.redirect || "/admin/security");
+        }
       } catch (e) {
         f.querySelector(".form-error").textContent = e.message;
       } finally {
@@ -321,11 +344,12 @@
       b = f.querySelector("button");
     b.disabled = true;
     try {
-      const d = Object.fromEntries(new FormData(f));
+      const d = collect(f);
       d.permissions = new FormData(f).getAll("permissions");
       const r = await request("/api/admin/users", "POST", d);
-      $("#admin-created").innerHTML =
-        `<div class="notice"><strong>Admin created.</strong><p>Share this authenticator setup key securely with the new admin. It is displayed only once.</p><code class="totp-key">${esc(r.secret)}</code><p>Issuer: UniGlobe · Time-based · SHA-1 · 6 digits · 30 seconds</p></div>`;
+      await showCredentials(r);
+      $("#admin-created").textContent =
+        "Admin created. They can now sign in with their temporary password.";
       f.reset();
     } catch (e) {
       f.querySelector(".form-error").textContent = e.message;

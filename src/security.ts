@@ -112,7 +112,7 @@ export async function rate(
 export async function session(env: Env, token: string | undefined) {
   if (!token) return null;
   return env.DB.prepare(
-    "SELECT a.id,a.username,a.permissions,a.is_main,s.csrf,s.token_hash,s.expires_at FROM sessions s JOIN admins a ON a.id=s.admin_id WHERE s.token_hash=? AND s.expires_at>? AND a.disabled=0",
+    "SELECT a.id,a.username,a.display_name,a.email,a.totp_policy,a.permissions,a.is_main,s.csrf,s.token_hash,s.expires_at FROM sessions s JOIN admins a ON a.id=s.admin_id WHERE s.token_hash=? AND s.expires_at>? AND a.disabled=0 AND a.must_reset=0 AND s.stage='ready' AND (a.totp!='' OR (a.is_main=0 AND a.totp_policy!='required' AND NOT EXISTS(SELECT 1 FROM records WHERE kind='security' AND id='main' AND json_extract(data,'$.requireTotp')=1)))",
   )
     .bind(await hash(token), Date.now())
     .first<any>();

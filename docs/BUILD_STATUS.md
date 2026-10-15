@@ -1,6 +1,16 @@
 # Build status
 
-## Current milestone — 2026-10-15
+## Refinement pass — in progress, 2026-10-15
+
+The prior V1 is not the final design or feature scope. The complete new requirements are preserved in `REFINEMENT_SPEC.md`.
+
+First stable checkpoint: protected singleton ownership with atomic transfer; temporary-password onboarding; password replacement before dashboard access; QR/manual TOTP enrollment; per-account required/optional/disabled TOTP; owner-enforced global TOTP; one-use recovery codes; grouped permissions with broad operational defaults; admin profile, suspension, reset and deletion controls; attributed security auditing. Owner protections remain server-side and database-enforced. Existing account permissions are retained rather than silently expanded.
+
+Validation: 61 runtime tests and 13 browser journeys pass, including a complete new-admin password/QR/recovery-code journey. Typecheck and Worker build pass. Migration 0011 adds identity state without resetting existing accounts. Production rollout of this checkpoint is pending below; authenticated live QA remains dependent on production Owner enrollment.
+
+Remaining in this refinement pass: full taxonomy and collections, curated homepage merchandising, badges, granular catalog/order enforcement, delivery rules, Fashion/Holdings redesign, polished retail controls, final mobile/localization and live persistence QA. No claim is made that the new specification is finished.
+
+## Prior deployment milestone — 2026-10-15
 
 Production deployed on 2026-10-15. Public website: https://uniglobeholdings.com. Admin: https://admin.uniglobeholdings.com. Ordering and notification delivery remain disabled pending owner configuration and Main Admin enrollment.
 

@@ -2003,3 +2003,64 @@ p,
 [lang="ta"] .listing h1 {
   font-size: clamp(36px, 7vw, 96px);
 }
+/* Account onboarding and grouped business permissions. */
+.auth-qr {
+  width: min(260px, 100%);
+  margin: 24px auto;
+  padding: 16px;
+  background: white;
+  color: #111;
+}
+.auth-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.permission-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 24px;
+  margin-block: 24px;
+}
+.permission-groups fieldset {
+  border: 0;
+  border-block-start: 1px solid var(--line, #ddd);
+  padding: 16px 0;
+  min-width: 0;
+}
+.permission-groups legend {
+  font-weight: 700;
+  padding-inline-end: 12px;
+}
+.permission-groups .check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block: 12px;
+}
+.credential-dialog {
+  max-width: 560px;
+  width: calc(100% - 32px);
+  padding: 32px;
+  border: 0;
+  border-radius: 12px;
+}
+.credential-dialog::backdrop {
+  background: #0b2448aa;
+}
+.credential-dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-block: 24px;
+  font-size: 17px;
+}
+.admin-main details > summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding-block: 12px;
+}
+.admin-main details form + form {
+  border-block-start: 1px solid #d8dce5;
+  margin-block-start: 32px;
+  padding-block-start: 24px;
+}

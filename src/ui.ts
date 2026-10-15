@@ -648,7 +648,12 @@ export function contentPage(
 }
 export function adminLayout(user: any, section: string, body: any) {
   const can = (p: string) =>
-    user.is_main || JSON.parse(user.permissions).includes(p);
+    user.is_main ||
+    JSON.parse(user.permissions).includes(p) ||
+    (p === "admins.read" &&
+      ["admins.create", "admins.write"].some((x) =>
+        JSON.parse(user.permissions).includes(x),
+      ));
   const links = [
     ["", "Overview", ""],
     ["products", "Products", "products.read"],
@@ -661,7 +666,7 @@ export function adminLayout(user: any, section: string, body: any) {
     ["branding", "Branding", "branding.write"],
     ["contacts", "Contact & socials", "contacts.write"],
     ["ordering", "Ordering & notifications", "settings.write"],
-    ["users", "Admin users", "admins.write"],
+    ["users", "Admin users", "admins.read"],
     ["security", "Security", ""],
     ["audit", "Audit log", "audit.read"],
   ];
@@ -708,7 +713,7 @@ export function authPage(setup = false, secret = "") {
               </div>
               <input type="hidden" name="secret" value="${secret}" />`
           : ""
-      }${field("Authenticator code", "code", "", "text", 'required pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code"')}
+      }${field("Authenticator code", "code", "", "text", setup ? 'required pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code"' : 'autocomplete="one-time-code"')}
       <p class="form-error" role="alert"></p>
       <button class="button wide">
         ${setup ? "Create Main Admin" : "Sign in"} ↗
