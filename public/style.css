@@ -1999,3 +1999,7 @@ p,
   margin-block: 28px;
   font-size: 13px;
 }
+
+[lang="ta"] .listing h1 {
+  font-size: clamp(36px, 7vw, 96px);
+}

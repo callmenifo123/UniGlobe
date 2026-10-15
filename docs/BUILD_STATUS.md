@@ -45,4 +45,4 @@ No known unfinished local implementation blocker remains. Native email/Telegram 
 
 ## Git checkpoints
 
-Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. The final implementation checkpoint is recorded in the following status commit; `git log -1` identifies the latest repository checkpoint.
+Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. Final implementation: `c98d517`. The following checkpoint includes the Tamil mobile typography polish and this handoff; `git log -1` identifies the latest repository checkpoint.
