@@ -1,25 +1,42 @@
 # Build status
 
-## Current milestone
-First local foundation: public website, seed catalog, bag/checkout, transactional orders, notification outbox and authenticated admin screens implemented. Active development; not production-ready yet.
+## Current milestone — 2026-10-15
 
-## Verified
-- Original 8 images unchanged; derived WebP copies separate.
-- Local D1 migrations applied; Worker dry-run bundles successfully.
-- 33 Workers-runtime tests pass: auth/TOTP, permissions, protected Main Admin, CSRF, catalog, order atomicity/idempotency/overselling, receipts, mocked email/Telegram and configuration validation.
-- Public desktop/mobile screenshots inspected. Typography and layout work; symbol/font fallbacks and more configurable copy need polish.
+Full local testing milestone. Holdings, Fashion, About, Contact and the Real Estate/Academy coming-soon pages are implemented. Production deployment is explicitly deferred by the owner; this is not a live deployment claim.
 
-## Runtime / resources
-Local server: http://localhost:8787 (Wrangler, local D1/R2).
-Planned resource names: uniglobe-website, uniglobe-website-db, uniglobe-website-media.
-No Cloudflare production resources created, no DNS changes, no Mail changes. User explicitly deferred deployment credentials and requested continued local implementation.
+## Implemented
 
-## Remaining work
-Browser end-to-end admin/order tests; concurrency hardening for admin inventory edits; additional upload validation; permissions editing; complete configurable secondary copy and division fields; interface translation coverage; local admin setup helper; security review and visual polish. Live integration and deployment remain deferred.
+- Responsive server-rendered storefront, search/filter/sort, product galleries, persistent bag, checkout and private confirmation pages. LKR 1,500 preview prices; unknown stock, sizes and materials are not invented.
+- Server-authoritative order totals; atomic order/inventory/outbox persistence; idempotency; concurrent stock protection and stale admin edit detection. Optional WhatsApp continuation happens after order persistence.
+- Email/customer/Telegram notification outbox with bounded retries, leases, delivery status and manual retry. Local transports are mocked. Email uses a configurable HTTPS adapter; native Cloudflare Email Sending integration still requires account capability/API verification.
+- Authenticated admin with required TOTP, password hashing, encrypted TOTP secrets, hashed sessions, CSRF/origin checks, throttling, audit records, protected Main Admin, scoped permissions and session revocation.
+- Editable catalog/variants/taxonomy, ordering/country settings, branding, page copy/SEO, translations, contacts/socials, notification destinations/templates, orders and admin users. Validated R2 media uploads with browser image optimization.
+- English, Arabic, Sinhala and Tamil storefront controls; RTL Arabic. Missing business translations remain visible in admin and fall back to English publicly.
+- Separate transparent-background Holdings and Fashion logos, with responsive derivatives. All eight original supplied assets remain unchanged.
+- Local setup helper, isolated test databases, GitHub Actions checks and operational/security/deployment documentation.
 
-## Secrets/setup
-Production: AUTH_KEY, BOOTSTRAP_TOKEN; optional TELEGRAM_BOT_TOKEN; email transport credential and verified endpoint pending Cloudflare Email Sending capability inspection. Cloudflare API token/account ID only needed later for deployment. No secrets in Git.
-Ordering defaults closed until catalog and delivery settings are reviewed. Local tests explicitly open isolated stores.
+## Verification
 
-## Git
-This file is included in the first foundation checkpoint. Use `git log -1` for its exact commit; subsequent milestones record their preceding checkpoint here.
+- TypeScript check; 46 Workers-runtime tests; eight Chromium end-to-end journeys; Worker dry-run build.
+- Tests cover authorization/CSRF/TOTP, owner protection, translation-only navigation and writes, inventory concurrency, order idempotency, notification mocks, upload validation, checkout, admin editing and mobile/RTL layouts.
+- Desktop/mobile screenshots inspected across the public site, product, checkout, receipt and admin. Admin tables scroll horizontally on small screens while preserving readable columns.
+- Production dependency audit reports no vulnerabilities. Original asset diff is empty.
+
+## Local manual testing
+
+Server: http://localhost:8787. Fashion: http://localhost:8787/fashion. Admin setup: http://localhost:8787/admin/setup.
+
+Follow README.md to use the private local bootstrap token from the ignored `.dev.vars` file, create Main Admin and enroll an authenticator. No default admin password is committed. Ordering starts closed; enable it in the local admin to test checkout with dummy customer data. Test catalog/bag, all four language selectors, mobile layout, admin product/content changes and order management.
+
+## Deferred before production launch
+
+- Cloudflare account/zone inspection and separate website Workers/D1/R2 provisioning; production domain bindings, secrets and deployment validation.
+- Verify Cloudflare Email Sending capability and configure the actual email transport/verified sender; configure Telegram and optional Turnstile, then test real delivery. Local mocked delivery does not prove live integration.
+- Owner review of real prices, inventory/variants, service countries, contacts, policies, business copy and native-speaker translations. Ordering remains closed until reviewed.
+- Complete the deployment checklist, including backups and live security/integration checks, in docs/DEPLOYMENT.md.
+
+No production resources, DNS, MX/SPF/DKIM/DMARC, Email Routing or existing UniGlobe Mail services have been modified. Resource configuration is exclusively for a separate website application.
+
+## Git checkpoints
+
+Previous foundation checkpoint: `34f3432`. The completed local implementation checkpoint is recorded below after validation. Use `git log -1` for the latest documentation checkpoint.

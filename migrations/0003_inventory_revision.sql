@@ -1,0 +1,1 @@
+ALTER TABLE products ADD COLUMN inventory_revision INTEGER NOT NULL DEFAULT 1;

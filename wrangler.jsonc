@@ -3,9 +3,25 @@
   "name": "uniglobe-website",
   "main": "src/index.ts",
   "compatibility_date": "2026-06-01",
-  "assets": {"directory": "./public", "binding": "ASSETS", "run_worker_first": true},
-  "d1_databases": [{"binding": "DB", "database_name": "uniglobe-website-db", "database_id": "local-only-replace-after-resource-inspection", "migrations_dir": "migrations"}],
-  "r2_buckets": [{"binding": "MEDIA", "bucket_name": "uniglobe-website-media"}],
-  "vars": {"SITE_URL":"https://uniglobeholdings.com", "ADMIN_HOST":"admin.uniglobeholdings.com"},
-  "triggers": {"crons": ["*/5 * * * *"]}
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "uniglobe-website-db",
+      "database_id": "local-only-replace-after-resource-inspection",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "uniglobe-website-media" },
+  ],
+  "vars": {
+    "SITE_URL": "https://uniglobeholdings.com",
+    "ADMIN_HOST": "admin.uniglobeholdings.com",
+  },
+  "triggers": { "crons": ["*/5 * * * *"] },
 }

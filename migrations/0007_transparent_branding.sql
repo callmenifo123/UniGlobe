@@ -1,0 +1,2 @@
+UPDATE records SET data=json_set(data,'$.holdingsLogo','/assets/holdings-logo-transparent.webp'),version=version+1 WHERE kind='branding' AND id='main' AND json_extract(data,'$.holdingsLogo')='/assets/holdings-logo.webp';
+UPDATE records SET data=json_set(data,'$.fashionLogo','/assets/fashion-logo-transparent.webp'),version=version+1 WHERE kind='branding' AND id='main' AND json_extract(data,'$.fashionLogo')='/assets/fashion-logo.webp';

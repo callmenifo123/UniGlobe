@@ -1,19 +1,16 @@
 {
   "name": "uniglobe",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs",
-    "test": "tests"
-  },
+  "description": "UniGlobe Holdings website, Fashion storefront, ordering system and secure Cloudflare admin workspace",
   "scripts": {
     "dev": "node scripts/wrangler.mjs dev --ip 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "build": "node scripts/wrangler.mjs deploy --dry-run --outdir dist",
     "migrate": "node scripts/wrangler.mjs d1 migrations apply uniglobe-website-db --local",
-    "test": "vitest run",
-    "test:browser": "playwright test"
+    "test": "node scripts/test.mjs",
+    "test:browser": "playwright test",
+    "setup:local": "node scripts/local-secrets.mjs && npm run migrate",
+    "format": "prettier --write src public/*.js public/style.css tests scripts *.ts *.json *.jsonc docs/*.md README.md"
   },
   "repository": {
     "type": "git",
@@ -29,6 +26,7 @@
   "homepage": "https://github.com/callmenifo123/UniGlobe#readme",
   "dependencies": {
     "hono": "^4.13.13",
+    "image-size": "^2.0.4",
     "otpauth": "^9.5.2",
     "zod": "^4.6.7"
   },
@@ -36,9 +34,14 @@
     "@cloudflare/vitest-plugin": "^1.4.2",
     "@cloudflare/workers-types": "^5.20261015.1",
     "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "prettier": "^3.9.10",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11",
     "wrangler": "^4.151.0"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=22 <25"
+  }
 }
