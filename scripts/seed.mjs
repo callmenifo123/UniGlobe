@@ -1,0 +1,24 @@
+import fs from 'node:fs';
+const L=en=>({en,ar:'',si:'',ta:''});
+const quote=x=>`'${JSON.stringify(x).replaceAll("'","''")}'`;
+const product=(name,slug,images,priority)=>({name:L(name),slug,images,description:L(''),shortDescription:L(''),seoTitle:L(name),seoDescription:L(''),category:priority===3?'dresses':'everyday',collection:'first-edit',price:150000,salePrice:null,currency:'LKR',variants:[{id:'standard',size:'',color:'',sku:'',stock:null,available:true}],featured:true,newArrival:true,visible:true,archived:false,priority,countries:['LK'],placeholder:true});
+const entries=[product('Focus lounge set','focus-lounge-set',['/assets/product-1.webp','/assets/product-2.webp','/assets/product-3.webp'],0),product('Forever tee','forever-tee',['/assets/product-4.webp'],1),product('Good Vibes set','good-vibes-set',['/assets/product-5.webp'],2),product('Mind T-shirt dress','mind-tshirt-dress',['/assets/product-6.webp'],3)];
+const rows=[];
+entries.forEach((p,i)=>{const id=`00000000-0000-4000-8000-00000000000${i+1}`;rows.push(`INSERT OR IGNORE INTO products(id,slug,data) VALUES('${id}','${p.slug}',${quote(p)});`,`INSERT OR IGNORE INTO inventory(product_id,variant_id,quantity) VALUES('${id}','standard',NULL);`)});
+const add=(kind,id,data)=>rows.push(`INSERT OR IGNORE INTO records(kind,id,data) VALUES('${kind}','${id}',${quote(data)});`);
+add('branding','main',{companyName:'UniGlobe Holdings',fashionName:'UniGlobe Fashion',holdingsLogo:'/assets/holdings-logo.webp',fashionLogo:'/assets/fashion-logo.webp',favicon:'',heroImage:'/assets/product-2.webp'});
+add('contacts','main',{email:'',phone:'',whatsapp:'',address:'',hours:'',socials:[]});
+add('ordering','main',{enabled:false,emailEnabled:false,emailRecipients:[],emailSender:'',telegramEnabled:false,telegramChats:[],whatsappEnabled:false,whatsappNumber:'',countries:['LK'],deliveryNote:L('Delivery arrangements will be confirmed with you.'),confirmation:L('Your order has already been received. We will contact you to confirm delivery arrangements.'),statuses:['New','Confirmed','Processing','Contacted','Shipped','Completed','Cancelled']});
+const content={
+ home:{eyebrow:'UNIGLOBE HOLDINGS',title:'A world of possibility.',intro:'Fashion. Real Estate. Academy. Three distinct directions, one shared outlook.',body:'Discover our world, beginning with UniGlobe Fashion.',cta:'Explore Fashion',image:'',seoTitle:'UniGlobe Holdings — Fashion, Real Estate & Academy'},
+ fashion:{eyebrow:'UNIGLOBE FASHION',title:'Everyday, considered.',intro:'Easy silhouettes. Your own way of wearing them.',body:'Discover the first edit from UniGlobe Fashion.',cta:'Shop the edit',image:'/assets/product-2.webp',seoTitle:'UniGlobe Fashion — The first edit'},
+ about:{eyebrow:'OUR WORLD',title:'Room for what comes next.',intro:'UniGlobe brings Fashion, Real Estate and Academy together under one name.',body:'Our Fashion division is the first chapter. Real Estate and Academy are coming next.',cta:'Get in touch',image:'',seoTitle:'About UniGlobe Holdings'},
+ contact:{eyebrow:'LET’S CONNECT',title:'Start a conversation.',intro:'For orders, collaborations and general enquiries.',body:'Our contact channels will appear here when available.',cta:'Contact us',image:'',seoTitle:'Contact UniGlobe'},
+ work:{eyebrow:'WORK WITH UNIGLOBE',title:'Good things begin together.',intro:'Explore opportunities in employment, supply, logistics and collaboration.',body:'We welcome conversations with people and businesses interested in working with UniGlobe.',cta:'Talk to us',image:'',seoTitle:'Work With UniGlobe'},
+ 'real-estate':{eyebrow:'UNIGLOBE REAL ESTATE',title:'Space for a new perspective.',intro:'A new division. A considered approach to places and possibilities.',body:'Our Real Estate chapter is taking shape. More details will be shared here.',cta:'Stay in touch',image:'',comingSoon:true,seoTitle:'UniGlobe Real Estate — Coming soon'},
+ academy:{eyebrow:'UNIGLOBE ACADEMY',title:'The next chapter starts with learning.',intro:'A new space for ideas, knowledge and growth.',body:'UniGlobe Academy is in development. Programme details will be shared when available.',cta:'Stay in touch',image:'',comingSoon:true,seoTitle:'UniGlobe Academy — Coming soon'},
+ footer:{eyebrow:'UNIGLOBE',title:'One world. Many possibilities.',intro:'Fashion · Real Estate · Academy',body:'',cta:'',image:'',seoTitle:''}
+};
+for(const [id,v] of Object.entries(content)){const o={};for(const [k,x] of Object.entries(v))o[k]=typeof x==='string'&&!['image'].includes(k)?L(x):x; o.seoDescription=L(v.intro);add('content',id,o);}
+add('categories','everyday',{name:L('Everyday'),description:L(''),priority:0});add('categories','dresses',{name:L('Dresses'),description:L(''),priority:1});add('collections','first-edit',{name:L('The first edit'),description:L(''),priority:0});
+fs.writeFileSync('migrations/0002_seed.sql',rows.join('\n')+'\n');

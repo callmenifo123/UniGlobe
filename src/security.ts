@@ -1,0 +1,16 @@
+import * as OTPAuth from 'otpauth';
+import type { Env } from './model';
+const encoder=new TextEncoder();
+export const random=(size=32)=>Array.from(crypto.getRandomValues(new Uint8Array(size)),n=>n.toString(16).padStart(2,'0')).join('');
+export const hash=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(s))),n=>n.toString(16).padStart(2,'0')).join('');
+export function equal(a:string,b:string){let n=a.length^b.length; for(let i=0;i<Math.max(a.length,b.length);i++)n|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return n===0;}
+export async function passwordHash(password:string,salt=random(16)){const key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoder.encode(salt),iterations:100000,hash:'SHA-256'},key,256);return `pbkdf2:100000:${salt}:${Array.from(new Uint8Array(bits),n=>n.toString(16).padStart(2,'0')).join('')}`;}
+export async function passwordValid(password:string,stored:string){return equal(await passwordHash(password,stored.split(':')[2]),stored);}
+async function key(secret:string){if(!secret||secret.length<32)throw new Error('AUTH_KEY must be configured with at least 32 characters');return crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',encoder.encode(secret)),'AES-GCM',false,['encrypt','decrypt']);}
+export async function encrypt(value:string,secret:string){const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:'AES-GCM',iv},await key(secret),encoder.encode(value));return btoa(String.fromCharCode(...iv))+'.'+btoa(String.fromCharCode(...new Uint8Array(data)));}
+export async function decrypt(value:string,secret:string){const [iv,data]=value.split('.').map(v=>Uint8Array.from(atob(v),c=>c.charCodeAt(0)));return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv},await key(secret),data));}
+export const totp=(secret:string)=>new OTPAuth.TOTP({issuer:'UniGlobe',label:'Admin',algorithm:'SHA1',digits:6,period:30,secret:OTPAuth.Secret.fromBase32(secret)});
+export const newTotp=()=>new OTPAuth.Secret({size:20}).base32;
+export function verifyTotp(secret:string,code:string,time=Date.now()){if(!/^\d{6}$/.test(code))return null; const delta=totp(secret).validate({token:code,window:1,timestamp:time});return delta===null?null:Math.floor(time/30000)+delta;}
+export async function rate(db:D1Database,key:string,max:number,seconds:number){const now=Math.floor(Date.now()/1000);const row=await db.prepare('INSERT INTO rate_limits(key,count,reset_at) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN reset_at<=? THEN 1 ELSE count+1 END, reset_at=CASE WHEN reset_at<=? THEN ? ELSE reset_at END RETURNING count').bind(key,now+seconds,now,now,now+seconds).first<{count:number}>();return !!row&&row.count<=max;}
+export async function session(env:Env,token:string|undefined){if(!token)return null;return env.DB.prepare('SELECT a.id,a.username,a.permissions,a.is_main,s.csrf,s.token_hash,s.expires_at FROM sessions s JOIN admins a ON a.id=s.admin_id WHERE s.token_hash=? AND s.expires_at>? AND a.disabled=0').bind(await hash(token),Date.now()).first<any>();}

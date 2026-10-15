@@ -1,0 +1,18 @@
+PRAGMA foreign_keys=ON;
+CREATE TABLE products(id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, data TEXT NOT NULL CHECK(json_valid(data)), version INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE records(kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL CHECK(json_valid(data)), version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(kind,id));
+CREATE TABLE admins(id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, totp TEXT NOT NULL, permissions TEXT NOT NULL, is_main INTEGER NOT NULL DEFAULT 0, disabled INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE UNIQUE INDEX one_main ON admins(is_main) WHERE is_main=1;
+CREATE TABLE sessions(token_hash TEXT PRIMARY KEY, admin_id TEXT NOT NULL REFERENCES admins(id) ON DELETE CASCADE, csrf TEXT NOT NULL, expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL, user_agent TEXT);
+CREATE TABLE rate_limits(key TEXT PRIMARY KEY, count INTEGER NOT NULL, reset_at INTEGER NOT NULL);
+CREATE TABLE totp_used(admin_id TEXT NOT NULL, step INTEGER NOT NULL, PRIMARY KEY(admin_id,step));
+CREATE TABLE orders(id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT NOT NULL UNIQUE, idempotency TEXT NOT NULL UNIQUE, request_hash TEXT NOT NULL, customer TEXT NOT NULL CHECK(json_valid(customer)), items TEXT NOT NULL CHECK(json_valid(items)), total INTEGER NOT NULL CHECK(total>=0), currency TEXT NOT NULL DEFAULT 'LKR', status TEXT NOT NULL DEFAULT 'New', notes TEXT NOT NULL DEFAULT '', archived INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE inventory(product_id TEXT NOT NULL REFERENCES products(id), variant_id TEXT NOT NULL, quantity INTEGER CHECK(quantity>=0), PRIMARY KEY(product_id,variant_id));
+CREATE TABLE outbox(id TEXT PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(id), channel TEXT NOT NULL, destination TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, next_attempt INTEGER NOT NULL DEFAULT 0, lease_until INTEGER NOT NULL DEFAULT 0, error TEXT, sent_at TEXT);
+CREATE TABLE media(id TEXT PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE audit(id INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT, action TEXT NOT NULL, target TEXT, detail TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX orders_created ON orders(created_at DESC);
+CREATE INDEX outbox_pending ON outbox(status,next_attempt);
+CREATE INDEX sessions_expiry ON sessions(expires_at);
+CREATE TRIGGER protect_main_delete BEFORE DELETE ON admins WHEN OLD.is_main=1 BEGIN SELECT RAISE(ABORT,'Main Admin is protected'); END;
+CREATE TRIGGER protect_main_role BEFORE UPDATE ON admins WHEN OLD.is_main=1 AND (NEW.is_main!=1 OR NEW.disabled!=0 OR NEW.permissions!=OLD.permissions) BEGIN SELECT RAISE(ABORT,'Main Admin is protected'); END;
