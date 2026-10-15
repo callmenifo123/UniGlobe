@@ -2,6 +2,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "uniglobe-website",
   "main": "src/index.ts",
+  "workers_dev": false,
+  "preview_urls": false,
+  "dev": { "host": "localhost", "upstream_protocol": "http" },
   "compatibility_date": "2026-06-01",
   "assets": {
     "directory": "./public",
@@ -12,7 +15,7 @@
     {
       "binding": "DB",
       "database_name": "uniglobe-website-db",
-      "database_id": "local-only-replace-after-resource-inspection",
+      "database_id": "5c41e08b-2d92-4ed2-a473-99001eac41bd",
       "migrations_dir": "migrations",
     },
   ],
@@ -23,5 +26,17 @@
     "SITE_URL": "https://uniglobeholdings.com",
     "ADMIN_HOST": "admin.uniglobeholdings.com",
   },
+  "routes": [
+    {
+      "pattern": "uniglobeholdings.com",
+      "custom_domain": true,
+      "zone_id": "c2ca1fc773da7e7a911ba96d8f2103fd",
+    },
+    {
+      "pattern": "admin.uniglobeholdings.com",
+      "custom_domain": true,
+      "zone_id": "c2ca1fc773da7e7a911ba96d8f2103fd",
+    },
+  ],
   "triggers": { "crons": ["*/5 * * * *"] },
 }

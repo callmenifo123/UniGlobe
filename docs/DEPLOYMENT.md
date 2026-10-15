@@ -2,9 +2,9 @@
 
 ## Current access prerequisite
 
-Deployment is authorized. The latest attempt found neither Cloudflare variable in the running machine and received proxy `403 Forbidden` responses from all four required domains. The environment draft now declares the token (scoped destination `api.cloudflare.com`), account ID and network requirements. Apply the existing values through environment settings and publish; do not put credentials in Git or chat. See BUILD_STATUS.md for the observed state.
+Production is deployed at https://uniglobeholdings.com and https://admin.uniglobeholdings.com. Credentials are supplied securely by the environment. Required egress: `api.cloudflare.com`, `uniglobeholdings.com`, `admin.uniglobeholdings.com`, `mail.uniglobeholdings.com`. Scope credentials to the API destination; public checks need no credential forwarding.
 
-Required egress: `api.cloudflare.com`, `uniglobeholdings.com`, `admin.uniglobeholdings.com`, `mail.uniglobeholdings.com`. Keep credentials scoped to the API destination; public live checks need no credential forwarding. No extra token permissions have been diagnosed yet because the Cloudflare API was unreachable.
+The updated token can inspect Email Routing rules. The separate settings endpoint `/zones/{zone_id}/email/routing` still returns 403 / code 10000 and requires Zone → Email Routing Settings → Read for optional inspection. No routing writes are needed or authorized by website deployment. See BUILD_STATUS.md for deployed resources and checks.
 
 ## Preserve UniGlobe Mail
 
@@ -18,11 +18,11 @@ Use distinct resources:
 - Public hostname: `uniglobeholdings.com`
 - Admin hostname: `admin.uniglobeholdings.com`
 
-The checked-in database ID is intentionally a local-only placeholder. Replace it only with the ID returned by creating/identifying the dedicated website database after inspection. Do not activate paid add-ons.
+The checked-in database ID identifies the dedicated production website database. Local Wrangler commands use local storage; only explicit remote commands access production D1. Do not recreate existing resources on redeploy or activate paid add-ons.
 
 ## Secrets and bindings
 
-Use `wrangler secret put NAME` or Cloudflare's secret UI; never commit values. Separate local secrets from production.
+Use `wrangler secret put NAME` or Cloudflare's secret UI; never commit values. Separate local secrets from production. The initial production AUTH_KEY and BOOTSTRAP_TOKEN are backed up in ignored `.production-secrets/website-secrets.json` (mode 600). Transfer this backup to the owner’s secret vault before retiring the deployment workspace. Use the bootstrap token at `https://admin.uniglobeholdings.com/admin/setup`; choose a unique password and enroll TOTP. Remove BOOTSTRAP_TOKEN after successful enrollment, and retain AUTH_KEY securely.
 
 | Name                                | Purpose                                                                                                                                                                               |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

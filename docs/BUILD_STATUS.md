@@ -2,18 +2,18 @@
 
 ## Current milestone — 2026-10-15
 
-Completed local implementation and final QA of the requested V1 scope. The owner has now authorized production deployment, but this running environment has not received Cloudflare credentials or network access. No live deployment or real notification delivery is claimed. The local site runs at http://localhost:8787; no owner localhost testing is required to continue development.
+Production deployed on 2026-10-15. Public website: https://uniglobeholdings.com. Admin: https://admin.uniglobeholdings.com. Ordering and notification delivery remain disabled pending owner configuration and Main Admin enrollment.
 
-## Production deployment attempt — blocked by environment propagation
+## Production deployment
 
-- Owner reports `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` configured. Both are absent from the running command environment; no Cloudflare keys exist in the local development settings file.
-- The environment configuration read returned no secret bindings or runtime variable requirements, and only package-manager/GitHub network presets.
-- Read-only HTTPS requests to `api.cloudflare.com`, `uniglobeholdings.com`, `admin.uniglobeholdings.com` and `mail.uniglobeholdings.com` all fail at the egress proxy with `Tunnel connection failed: 403 Forbidden`. This is not evidence of a Cloudflare API token permission failure: the API is not reachable.
-- Saved a draft adding the existing token binding (destination only `api.cloudflare.com`), the account-ID runtime-variable requirement, and those four exact allowed domains, preserving network presets. Saving succeeded and returned `requires_publish: true`.
-- The owner must bind the existing values to this environment, review/save the draft and publish the environment. Do not ask for token values in chat or generate a replacement token merely because the saved configuration has not propagated.
-- No DNS inspection, resource creation, migrations against production, production secret installation, deployment or live verification could run. No Cloudflare/Mail resources were changed and no new paid service was enabled.
-- Local pre-deployment validation was rerun successfully: TypeScript, 54 runtime tests, 12 browser journeys and Worker dry-run build. These are not post-deployment checks.
-- Once access propagates, resume from DNS/resource inventory before any writes. Recheck both variable presence and authenticated API access; use the existing `work` checkout. Run the release procedure in `docs/DEPLOYMENT.md`, then collect business configuration/Main Admin enrollment in one batch.
+- Created separate Worker `uniglobe-website`, D1 `uniglobe-website-db` (`5c41e08b-2d92-4ed2-a473-99001eac41bd`) and R2 `uniglobe-website-media`.
+- Applied all ten production migrations. Initial state: four preview products, zero orders, zero admins. Installed independently generated `AUTH_KEY` and `BOOTSTRAP_TOKEN` securely.
+- Published version `ef8cc0f4-8ab0-48b5-8d48-187517647e97` to the two exact website custom domains; Workers.dev and preview URLs disabled. Outbox cron runs every five minutes.
+- All 15 original DNS records remain identical. Only apex/admin website records were added. Existing Mail Worker settings and custom-domain binding remain identical; Mail HTTPS returns 200. No Mail resources or Email Routing configuration were altered. No new paid service was enabled.
+- Updated token successfully reads Email Routing rules. GET `/zones/{zone_id}/email/routing` still returns Cloudflare 403 / code 10000; inspecting settings requires Zone → Email Routing Settings → Read. This optional inspection does not block the website. Email sending is not enabled or claimed verified.
+- Live Chromium checks pass for nine public routes, images and mobile layouts in all four languages (including Arabic RTL), with no browser runtime errors. Live desktop Holdings and mobile Fashion screenshots inspected. Chromium trusts the environment proxy via its specific CA public-key pin; HTTPS HTTP checks use the system trust store.
+- Live public/catalog, robots/sitemap, admin login and setup checks pass. Public-host admin access returns 404; unauthenticated admin API returns 401. HTTPS security headers and admin no-store policy verified.
+- Production authenticated admin/order writes await owner enrollment and approved business data; complete equivalent journeys pass against isolated local test data.
 
 ## Completed
 
@@ -32,7 +32,7 @@ Completed local implementation and final QA of the requested V1 scope. The owner
 
 ## Final verification
 
-- TypeScript check, **54 Workers-runtime tests**, **12 Chromium browser journeys**, Worker dry-run build and local migrations pass.
+- TypeScript check, **54 Workers-runtime tests**, **12 Chromium browser journeys**, Worker dry-run build and local migrations pass. The post-deployment rerun exposed Wrangler forwarding local requests through the production hostname; explicit development host configuration fixes this without changing production host restrictions.
 - Browser coverage includes all four languages, Arabic RTL, 320px/390px mobile and tablet layouts, catalog/bag/checkout/receipt flows, admin editing, media upload/reuse and order handling.
 - Automated WCAG A/AA checks pass across 16 key public/admin pages. These supplement visual review; they are not an independent accessibility certification.
 - Desktop/mobile screenshots visually inspected for Holdings/Fashion, product, bag, checkout, receipt, About/Contact, both coming-soon pages, admin products/orders and the media picker.
@@ -40,20 +40,18 @@ Completed local implementation and final QA of the requested V1 scope. The owner
 
 ## Resources and local state
 
-Dedicated planned names: `uniglobe-website`, `uniglobe-website-db`, `uniglobe-website-media`. Ten migrations apply to local D1; browser tests use a separate temporary database and do not populate the development catalog with test products/orders.
+Production resources are listed above. Local D1/R2 and random local-only secrets are ignored by Git. Browser tests use a separate temporary database and never populate production with test orders or administrators.
 
-Local D1/R2 and random local-only secrets are ignored by Git. README documents setup. No default admin password is supplied; the owner chooses Main Admin credentials and enrolls TOTP using the private bootstrap token. Ordering defaults closed until business content is reviewed. The server must be restarted with `npm run dev` if this environment stops.
-
-No production resources, DNS, MX/SPF/DKIM/DMARC, Email Routing or existing UniGlobe Mail services have been modified.
+Production secret backups are in ignored, mode-600 `.production-secrets/website-secrets.json` in this deployment workspace. Transfer them to an owner-controlled secret vault before retiring the workspace. Do not publish their values. Use the bootstrap token at https://admin.uniglobeholdings.com/admin/setup to choose Main Admin credentials and enroll TOTP, then remove the production `BOOTSTRAP_TOKEN` secret. Preserve `AUTH_KEY`; changing it requires planned TOTP re-encryption.
 
 ## Only remaining external or owner-dependent work
 
-1. Apply/publish the existing Cloudflare deployment credentials and four required network domains to this running environment so deployment can inspect resources, provision the separate website bindings, set production secrets, bind the explicit apex/admin hostnames and verify the deployed service without affecting Mail.
+1. Owner completes Main Admin enrollment and securely backs up production secrets.
 2. Verify the account's native Email Sending entitlement, binding contract, approved sender and arbitrary customer-receipt support; configure recipients. Supply Telegram bot/chat settings, the WhatsApp contact number and optional free Turnstile keys. Perform controlled live delivery checks once these exist. See `docs/NOTIFICATIONS.md`.
 3. Owner supplies/reviews actual product names/prices/stock/variants, delivery coverage/terms, contacts/socials, factual business copy, privacy/retention choices and missing business translations/native-speaker review. Owner enrolls the production Main Admin authenticator. Then complete the documented launch checklist and open ordering.
 
-No known unfinished local application implementation blocker remains. Production is currently blocked by the environment credential/network propagation described above. Native email/Telegram mocks cannot establish real deliverability or Cloudflare account entitlement. At-least-once notification delivery can duplicate a send after an ambiguous timeout; persisted orders remain unique.
+No known unfinished local application implementation blocker remains. Production is live; ordering remains intentionally closed pending business configuration. Native email/Telegram mocks cannot establish real deliverability or Cloudflare account entitlement. At-least-once notification delivery can duplicate a send after an ambiguous timeout; persisted orders remain unique.
 
 ## Git checkpoints
 
-Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. Final implementation: `c98d517`. Tamil typography/final local status: `28344b3`. The next checkpoint records the production environment blocker; `git log -1` identifies the latest repository checkpoint.
+Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. Final implementation: `c98d517`. Tamil typography/final local status: `28344b3`. Environment blocker checkpoint: `2ba6fcf`. The next checkpoint records the successful production deployment; `git log -1` identifies the latest repository checkpoint.

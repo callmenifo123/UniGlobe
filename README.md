@@ -49,7 +49,7 @@ npm run build
 
 See [notification integration instructions](docs/NOTIFICATIONS.md), [deployment instructions](docs/DEPLOYMENT.md), [architecture](docs/ARCHITECTURE.md), [security notes](docs/SECURITY.md), and [current build status](docs/BUILD_STATUS.md).
 
-Production deployment is authorized but currently blocked by missing credential bindings and Cloudflare network access in the running environment; see the build status. No Cloudflare resources or DNS records have been changed. UniGlobe Mail is a separate service and must remain untouched.
+Production is live: [Holdings](https://uniglobeholdings.com), [Fashion](https://uniglobeholdings.com/fashion), and [Admin](https://admin.uniglobeholdings.com). Ordering and notifications remain closed until owner configuration and Main Admin enrollment. See [deployment instructions](docs/DEPLOYMENT.md) for bootstrap and secure secret backup. UniGlobe Mail and its existing DNS/resources were preserved.
 
 ## Assets and content
 

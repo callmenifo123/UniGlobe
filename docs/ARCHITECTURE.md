@@ -28,4 +28,4 @@ Server validates customer and current catalog/variant/country/price; server comp
 
 ## Deployment and validation
 
-Run typecheck, unit/integration tests, local D1 migrations, functional browser checks and Worker dry-run before checkpoints. Push to the existing repository without force. Deployment is blocked until Cloudflare access and inspection are available. Never invent resource IDs or claim an unverified live deployment.
+Run typecheck, unit/integration tests, local D1 migrations, functional browser checks and Worker dry-run before checkpoints. Push to the existing repository without force. Production uses the dedicated website resources and explicit apex/admin custom domains recorded in BUILD_STATUS.md. Repeat DNS/resource inspection before changing deployment bindings. Never invent resource IDs or claim an unverified live deployment.
