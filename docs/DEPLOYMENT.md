@@ -1,4 +1,10 @@
-# Deployment — deferred until Cloudflare access is supplied
+# Production deployment
+
+## Current access prerequisite
+
+Deployment is authorized. The latest attempt found neither Cloudflare variable in the running machine and received proxy `403 Forbidden` responses from all four required domains. The environment draft now declares the token (scoped destination `api.cloudflare.com`), account ID and network requirements. Apply the existing values through environment settings and publish; do not put credentials in Git or chat. See BUILD_STATUS.md for the observed state.
+
+Required egress: `api.cloudflare.com`, `uniglobeholdings.com`, `admin.uniglobeholdings.com`, `mail.uniglobeholdings.com`. Keep credentials scoped to the API destination; public live checks need no credential forwarding. No extra token permissions have been diagnosed yet because the Cloudflare API was unreachable.
 
 ## Preserve UniGlobe Mail
 
@@ -30,6 +36,12 @@ Use `wrangler secret put NAME` or Cloudflare's secret UI; never commit values. S
 `SITE_URL` and `ADMIN_HOST` are public runtime configuration. Telegram requires egress to `api.telegram.org`; Turnstile uses `challenges.cloudflare.com`. Configure only the selected verified email endpoint. No external paid email subscription is required or activated by this project.
 
 The native `ORDER_EMAIL: SendEmail` integration is implemented alongside the optional HTTPS adapter. See [notification transport setup](NOTIFICATIONS.md) for the exact binding and request contract. Cloudflare's legacy Email Routing outbound binding may restrict recipients to verified addresses; do not assume it supports arbitrary customer receipts. Inspect the account's Email Sending entitlement, sender and recipient restrictions and verify the implemented binding against the live service without changing Mail's existing resources or DNS. Until then, email is verified through mocks and must remain disabled in production.
+
+## Guard against automatic domain replacement
+
+The installed Wrangler custom-domain publisher can set `override_existing_origin` and `override_existing_dns_record` in noninteractive mode. Do not depend on CLI prompts to protect existing resources. Inventory existing custom domains, Workers routes and zone DNS first; compare the proposed changes against the two authorized website hostnames and abort on any Mail conflict. Never blindly publish a domain changeset after a failed inspection.
+
+Keep a restricted local pre-deployment snapshot of DNS and relevant Worker/binding/resource identities. Compare mail-related DNS and routing after deployment; compare only intended website changes separately. Do not put credentials or private service configuration in committed reports. If the token lacks access, report the specific denied endpoint and permission rather than widening the token preemptively.
 
 ## Release procedure
 

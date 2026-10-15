@@ -2,7 +2,18 @@
 
 ## Current milestone — 2026-10-15
 
-Completed local implementation and final QA of the requested V1 scope. Cloudflare deployment remains explicitly deferred by the owner. No live deployment or real notification delivery is claimed. The local site runs at http://localhost:8787; no owner localhost testing is required to continue development.
+Completed local implementation and final QA of the requested V1 scope. The owner has now authorized production deployment, but this running environment has not received Cloudflare credentials or network access. No live deployment or real notification delivery is claimed. The local site runs at http://localhost:8787; no owner localhost testing is required to continue development.
+
+## Production deployment attempt — blocked by environment propagation
+
+- Owner reports `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` configured. Both are absent from the running command environment; no Cloudflare keys exist in the local development settings file.
+- The environment configuration read returned no secret bindings or runtime variable requirements, and only package-manager/GitHub network presets.
+- Read-only HTTPS requests to `api.cloudflare.com`, `uniglobeholdings.com`, `admin.uniglobeholdings.com` and `mail.uniglobeholdings.com` all fail at the egress proxy with `Tunnel connection failed: 403 Forbidden`. This is not evidence of a Cloudflare API token permission failure: the API is not reachable.
+- Saved a draft adding the existing token binding (destination only `api.cloudflare.com`), the account-ID runtime-variable requirement, and those four exact allowed domains, preserving network presets. Saving succeeded and returned `requires_publish: true`.
+- The owner must bind the existing values to this environment, review/save the draft and publish the environment. Do not ask for token values in chat or generate a replacement token merely because the saved configuration has not propagated.
+- No DNS inspection, resource creation, migrations against production, production secret installation, deployment or live verification could run. No Cloudflare/Mail resources were changed and no new paid service was enabled.
+- Local pre-deployment validation was rerun successfully: TypeScript, 54 runtime tests, 12 browser journeys and Worker dry-run build. These are not post-deployment checks.
+- Once access propagates, resume from DNS/resource inventory before any writes. Recheck both variable presence and authenticated API access; use the existing `work` checkout. Run the release procedure in `docs/DEPLOYMENT.md`, then collect business configuration/Main Admin enrollment in one batch.
 
 ## Completed
 
@@ -37,12 +48,12 @@ No production resources, DNS, MX/SPF/DKIM/DMARC, Email Routing or existing UniGl
 
 ## Only remaining external or owner-dependent work
 
-1. Supply Cloudflare deployment access (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) to inspect resources, provision the separate website bindings, set production secrets, bind the explicit apex/admin hostnames and verify the deployed service without affecting Mail.
+1. Apply/publish the existing Cloudflare deployment credentials and four required network domains to this running environment so deployment can inspect resources, provision the separate website bindings, set production secrets, bind the explicit apex/admin hostnames and verify the deployed service without affecting Mail.
 2. Verify the account's native Email Sending entitlement, binding contract, approved sender and arbitrary customer-receipt support; configure recipients. Supply Telegram bot/chat settings, the WhatsApp contact number and optional free Turnstile keys. Perform controlled live delivery checks once these exist. See `docs/NOTIFICATIONS.md`.
 3. Owner supplies/reviews actual product names/prices/stock/variants, delivery coverage/terms, contacts/socials, factual business copy, privacy/retention choices and missing business translations/native-speaker review. Owner enrolls the production Main Admin authenticator. Then complete the documented launch checklist and open ordering.
 
-No known unfinished local implementation blocker remains. Native email/Telegram mocks cannot establish real deliverability or Cloudflare account entitlement. At-least-once notification delivery can duplicate a send after an ambiguous timeout; persisted orders remain unique.
+No known unfinished local application implementation blocker remains. Production is currently blocked by the environment credential/network propagation described above. Native email/Telegram mocks cannot establish real deliverability or Cloudflare account entitlement. At-least-once notification delivery can duplicate a send after an ambiguous timeout; persisted orders remain unique.
 
 ## Git checkpoints
 
-Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. Final implementation: `c98d517`. The following checkpoint includes the Tamil mobile typography polish and this handoff; `git log -1` identifies the latest repository checkpoint.
+Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. Final implementation: `c98d517`. Tamil typography/final local status: `28344b3`. The next checkpoint records the production environment blocker; `git log -1` identifies the latest repository checkpoint.

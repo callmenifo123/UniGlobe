@@ -49,7 +49,7 @@ npm run build
 
 See [notification integration instructions](docs/NOTIFICATIONS.md), [deployment instructions](docs/DEPLOYMENT.md), [architecture](docs/ARCHITECTURE.md), [security notes](docs/SECURITY.md), and [current build status](docs/BUILD_STATUS.md).
 
-Production deployment is currently deferred by the owner. No Cloudflare resources or DNS records have been changed. UniGlobe Mail is a separate service and must remain untouched.
+Production deployment is authorized but currently blocked by missing credential bindings and Cloudflare network access in the running environment; see the build status. No Cloudflare resources or DNS records have been changed. UniGlobe Mail is a separate service and must remain untouched.
 
 ## Assets and content
 
