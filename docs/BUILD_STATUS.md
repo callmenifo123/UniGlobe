@@ -1,12 +1,22 @@
 # Build status
 
-## Public design refinement — 2026-10-16 — not deployed
+## Approved public design deployment — 2026-10-16
+
+- Deployed the approved clean `work` commit `b8f41f8` at 100% traffic on the existing `uniglobe-website` Worker.
+- Previous version / rollback target: `6336a56a-4983-428e-986a-608cfdfa80d9` (previous deployment `4fd36b1f-d3d2-4e7b-ad41-1279eaefd6ee`). New version: `29aba046-0aaa-4ef6-9abb-6b661129a45c`.
+- Repeated all pre-deployment checks successfully: 69 runtime tests, 14 browser journeys, automated WCAG A/AA across 23 routes, typecheck and Worker dry-run build. No previously passing check failed.
+- Used version upload with preserved environment variables and strict conflict checking, then version deployment. No triggers/DNS/domain changes, migrations, secrets changes, new resources or paid services. DNS records, domain bindings and all existing resource/variable/secret binding identities matched the recorded baseline afterward. Only deployment version annotations differed in Worker settings.
+- Live Holdings/Fashion/catalog/product/coming-soon pages passed at 1440, 768, 390 and 320 pixels. Reviewed live desktop/mobile screenshots; correct logos, new compositions, working navigation/footer destinations, three taxonomy landing pages, loaded images and no overflow/runtime errors. Favicons passed on both public/admin hosts.
+- Live keyboard filter open/Escape/focus return, sorting, variant selection, quantity controls, browser-local bag persistence and checkout state passed. All four languages, Arabic RTL and reduced motion passed. Three-image mobile gallery scrolling and keyboard focus passed. Catalog API and admin authorization boundaries remain healthy; the new public stylesheet is absent from admin login. No production orders or accounts were created.
+- No serious regression found; rollback was not needed. Backend/business logic, Admin UX, existing business configuration and Mail were untouched.
+
+## Public design refinement — 2026-10-16 — implementation history
 
 - Started from `40167cf` on `work` in `/workspace/UniGlobe`; baseline typecheck, 69 runtime tests, 14 browser journeys/accessibility and dry-run build passed before edits.
 - Rebuilt the Holdings opening around navy/ivory editorial typography and photography, compact division navigation and a distinct typographic feature. Redesigned Fashion campaigns, product/catalog presentation, editorial/collection sections and public content pages. Improved public navigation, selects/filters, buttons, variant/quantity controls and mobile gallery layouts. Approved logos/favicon assets and subtle Fashion parent attribution are preserved.
 - Public styles are isolated in `public/assets/public-design.css`, loaded only for public pages. Admin UX, backend/business behavior, APIs, data/schema, translations infrastructure, original assets and Cloudflare configuration are unchanged. No production/Mail operations or new paid services.
 - Final checks passed: 69 runtime tests, 14 browser journeys, automated WCAG A/AA across 23 routes, typecheck and Worker dry-run build. Desktop/mobile visual review and focused image/loading/layout/runtime checks passed. The public stylesheet is absent on admin login.
-- Design notes and committed desktop/mobile screenshots: [PUBLIC_DESIGN_REVIEW.md](PUBLIC_DESIGN_REVIEW.md). This branch awaits design review; **do not deploy without authorization**.
+- Design notes and committed desktop/mobile screenshots: [PUBLIC_DESIGN_REVIEW.md](PUBLIC_DESIGN_REVIEW.md). This implementation was subsequently approved and deployed as recorded above.
 
 ## Branding and favicon pass — 2026-10-16
 

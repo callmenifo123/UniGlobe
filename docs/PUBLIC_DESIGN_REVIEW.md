@@ -1,6 +1,6 @@
 # Public design review — 2026-10-16
 
-This public-only design pass starts from `40167cf` on `work`. It is implemented in `/workspace/UniGlobe` and is **not deployed**. Production remains on the approved branding checkpoint.
+This public-only design pass starts from `40167cf` on `work`. It was implemented in `/workspace/UniGlobe`, approved, and deployed as commit `b8f41f8` on 2026-10-16. Production Worker version: `29aba046-0aaa-4ef6-9abb-6b661129a45c`. See `BUILD_STATUS.md` for verification and the rollback target.
 
 ## Direction
 
@@ -25,4 +25,4 @@ These screenshots use local development preview content; they do not imply produ
 
 Baseline and final verification: typecheck, 69 Workers-runtime tests, 14 Chromium browser journeys, WCAG A/AA checks across 23 routes and Worker dry-run build passed. Desktop/mobile review covered Holdings, Fashion, catalog, product, About, Contact, Real Estate and bag; the existing journeys also cover checkout/receipts, Academy, tablet/small mobile, all four languages and admin workflows. Focused checks confirmed image loading, no horizontal overflow or runtime errors, and absence of the public stylesheet on admin login. Additional checks passed for keyboard filter opening, Escape/focus return, open-dialog accessibility, reduced motion, Arabic RTL and Tamil.
 
-Review this branch before authorizing a deployment. Existing preview products, incomplete business translations and closed production ordering remain business-configuration concerns, unchanged by this design pass.
+The public design has been approved and deployed. Existing preview products, incomplete business translations and closed production ordering remain business-configuration concerns, unchanged by this design pass.
