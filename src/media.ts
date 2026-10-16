@@ -6,3 +6,7 @@ export const suppliedMedia = [
     `Supplied product image ${i + 1}`,
   ]),
 ].map(([id, name]) => ({ path: `/assets/${id}.webp`, name }));
+suppliedMedia.unshift({
+  path: "/assets/holdings-logo-approved.png",
+  name: "UniGlobe Holdings · approved horizontal logo",
+});

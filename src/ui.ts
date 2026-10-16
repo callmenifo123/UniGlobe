@@ -18,6 +18,12 @@ function logoResponsive(path: string, width: number) {
     `srcset="${path.replace(".webp", "-small.webp")} 320w, ${path} ${large}w" sizes="${width}px"`,
   );
 }
+// Upgrade supplied defaults at render time without overwriting owner configuration.
+export function holdingsLogo(path?: string) {
+  return !path || /^\/assets\/holdings-logo(?:-transparent)?\.webp$/.test(path)
+    ? "/assets/holdings-logo-approved.png"
+    : path;
+}
 export function shell(
   title: string,
   body: any,
@@ -36,6 +42,7 @@ export function shell(
   }: any = {},
 ) {
   const fashionBrand = page === "fashion";
+  const holdings = holdingsLogo(branding.holdingsLogo);
   return html`<!doctype html>
     <html lang="${lang}" dir="${lang === "ar" ? "rtl" : "ltr"}">
       <head>
@@ -51,15 +58,25 @@ export function shell(
         <meta property="og:type" content="website" />
         ${image ? html`<meta property="og:image" content="${image}" />` : ""}${admin ? html`<meta name="robots" content="noindex,nofollow" /><meta name="csrf-token" content="${csrf}" />` : ""}
         <link rel="stylesheet" href="/style.css" />
-        ${branding.favicon ? html`<link rel="icon" href="${branding.favicon}" />` : ""}
+        ${branding.favicon ? html`<link rel="icon" href="${branding.favicon}" />` : html`<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" /><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" /><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png" />`}
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/assets/apple-touch-icon.png"
+        />
         <script src="${admin ? "/admin.js" : "/store.js"}" defer></script>
       </head>
       <body class="${admin ? "admin-body" : ""} ${page}">
         <a class="skip" href="#main">${t("Skip to content", lang)}</a>${
           admin
             ? html`<header class="admin-top">
-                <a class="wordmark" href="/admin"
-                  >UNIGLOBE <small>WORKSPACE</small></a
+                <a class="wordmark admin-brand" href="/admin"
+                  ><img
+                    src="${holdings}"
+                    alt="UniGlobe Holdings"
+                    width="1620"
+                    height="615"
+                  /><small>WORKSPACE</small></a
                 >${
                   user
                     ? html`<span>${user.username}</span>
@@ -78,7 +95,7 @@ export function shell(
                   class="wordmark brand-signature"
                   href="${fashionBrand ? "/fashion" : "/"}"
                   aria-label="${fashionBrand ? branding.fashionName : branding.companyName || "UniGlobe Holdings"}"
-                  >${(fashionBrand ? branding.fashionLogo : branding.holdingsLogo) ? html`<img src="${fashionBrand ? branding.fashionLogo : branding.holdingsLogo}" alt="${fashionBrand ? branding.fashionName : branding.companyName}" width="130" height="125" />` : html`UNIGLOBE<span>${fashionBrand ? "FASHION" : "HOLDINGS"}</span>`}</a
+                  >${(fashionBrand ? branding.fashionLogo : holdings) ? html`<img src="${fashionBrand ? branding.fashionLogo : holdings}" alt="${fashionBrand ? branding.fashionName : branding.companyName}" width="${fashionBrand ? 130 : 1620}" height="${fashionBrand ? 125 : 615}" />` : html`UNIGLOBE<span>${fashionBrand ? "FASHION" : "HOLDINGS"}</span>`}</a
                 >
                 <nav aria-label="Main navigation">
                   <a
@@ -135,7 +152,7 @@ export function shell(
                 <div class="footer-brand">
                   ${fashionBrand ? branding.fashionName || "UniGlobe Fashion" : branding.companyName || "UniGlobe Holdings"}<span
                     dir="auto"
-                    >${fashionBrand ? "A UniGlobe Holdings company" : text(footer.title, lang)}</span
+                    >${fashionBrand ? "A division of UniGlobe Holdings" : text(footer.title, lang)}</span
                   >
                 </div>
                 <div>

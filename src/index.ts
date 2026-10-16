@@ -21,6 +21,7 @@ import { deliver } from "./notifications";
 import { admin } from "./admin";
 import {
   shell,
+  holdingsLogo,
   home,
   fashion,
   listing,
@@ -89,6 +90,7 @@ app.onError((e, c) => {
 app.get("/style.css", (c) => c.env.ASSETS.fetch(c.req.raw));
 app.get("/store.js", (c) => c.env.ASSETS.fetch(c.req.raw));
 app.get("/admin.js", (c) => c.env.ASSETS.fetch(c.req.raw));
+app.get("/favicon.ico", (c) => c.env.ASSETS.fetch(c.req.raw));
 app.get("/assets/*", (c) => c.env.ASSETS.fetch(c.req.raw));
 app.get("/media/:id", async (c) => {
   const id = c.req.param("id");
@@ -234,7 +236,7 @@ app.get("*", async (c) => {
       "@type": "Organization",
       name: branding.companyName,
       url: c.env.SITE_URL,
-      logo: c.env.SITE_URL + branding.holdingsLogo,
+      logo: c.env.SITE_URL + holdingsLogo(branding.holdingsLogo),
     };
   } else if (path === "/fashion") {
     page = "fashion";

@@ -1,5 +1,13 @@
 # Build status
 
+## Branding and favicon pass — 2026-10-16
+
+- Inspected both supplied `ChatGPT Image Oct 16, 2026` PNGs from `origin/main`: both visibly say Holdings. `05_18_02 AM-2` supplies the horizontal Holdings lockup; `05_17_58 AM-1` supplies the shared symbol for icons. The existing approved Fashion logo remains primary on Fashion pages. Original assets are preserved unchanged.
+- Holdings navigation and admin/login/setup now use the exact horizontal artwork with transparent exterior margins trimmed, proportional sizing and responsive navigation spacing. Organization logo metadata points to the new asset. Footers stay text-based; Fashion attribution reads “A division of UniGlobe Holdings” without stacked logos. Existing custom branding values remain respected; no database records were changed.
+- Shared-symbol ICO (16/32/48), PNG (16/32), and Apple touch (180) icons are served through the common HTML template on public and admin routes. Icons use a white square background for legibility across browser themes.
+- Validation: 69 runtime tests, 14 browser journeys, WCAG A/AA checks across 23 routes, typecheck and Worker dry-run build. Focused image/favicon/layout checks and desktop/mobile screenshot review passed at 1440, 768, 390 and 320 pixels. A Tamil tablet navigation overflow was corrected before the final successful run.
+- Deployment/live verification is recorded after rollout below. No business logic, security, APIs, schema, secrets, Mail, or infrastructure configuration was changed.
+
 ## Refinement pass — 2026-10-16
 
 The complete requested scope is preserved in `REFINEMENT_SPEC.md`. This pass substantially revises the prior V1.
