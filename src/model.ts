@@ -32,6 +32,7 @@ export const variantSchema = z.object({
   size: z.string().max(40).default(""),
   color: z.string().max(60).default(""),
   sku: z.string().max(80).default(""),
+  price: z.number().int().min(1).max(100000000).nullable().default(null),
   stock: z.number().int().min(0).max(1000000).nullable().default(null),
   available: z.boolean().default(true),
 });
@@ -49,9 +50,29 @@ export const productSchema = z
     images: z.array(imagePath).max(12),
     category: z.string().max(80).default(""),
     collection: z.string().max(80).default(""),
+    collections: z.array(z.string().max(120)).max(100).default([]),
+    sku: z.string().max(80).default(""),
+    badges: z
+      .array(
+        z.object({
+          id: z.string().max(120),
+          priority: z.number().int().default(0),
+          card: z.boolean().default(true),
+          page: z.boolean().default(true),
+          enabled: z.boolean().default(true),
+          start: z
+            .union([z.iso.datetime({ offset: true }), z.literal("")])
+            .default(""),
+          end: z
+            .union([z.iso.datetime({ offset: true }), z.literal("")])
+            .default(""),
+        }),
+      )
+      .max(20)
+      .default([]),
     price: z.number().int().min(1).max(100000000),
     salePrice: z.number().int().min(1).max(100000000).nullable().default(null),
-    currency: z.literal("LKR"),
+    currency: z.enum(["LKR", "SAR", "USD"]),
     variants: z.array(variantSchema).min(1).max(100),
     featured: z.boolean(),
     newArrival: z.boolean(),
@@ -62,12 +83,26 @@ export const productSchema = z
     placeholder: z.boolean().default(false),
   })
   .superRefine((v, c) => {
+    if (!v.name.en.trim())
+      c.addIssue({
+        code: "custom",
+        message: "An English product name is required for fallback",
+        path: ["name", "en"],
+      });
     if (v.salePrice !== null && v.salePrice >= v.price)
       c.addIssue({
         code: "custom",
         message: "Sale price must be below regular price",
         path: ["salePrice"],
       });
+    v.badges.forEach((b, i) => {
+      if (b.start && b.end && Date.parse(b.end) <= Date.parse(b.start))
+        c.addIssue({
+          code: "custom",
+          message: "Badge end must follow its start",
+          path: ["badges", i, "end"],
+        });
+    });
     if (new Set(v.variants.map((x) => x.id)).size !== v.variants.length)
       c.addIssue({
         code: "custom",
@@ -122,7 +157,7 @@ export const statuses = [
 ];
 export const text = (v: any, l: Locale = "en") =>
   typeof v === "string" ? v : v?.[l] || v?.en || "";
-export const money = (n: number, l: Locale = "en") =>
+export const money = (n: number, l: Locale = "en", currency = "LKR") =>
   new Intl.NumberFormat(
     l === "ar"
       ? "ar-SA"
@@ -133,14 +168,14 @@ export const money = (n: number, l: Locale = "en") =>
           : "en-LK",
     {
       style: "currency",
-      currency: "LKR",
+      currency,
       minimumFractionDigits: n % 100 === 0 ? 0 : 2,
       maximumFractionDigits: 2,
     },
   ).format(n / 100);
 export const L = (en: string) => ({ en, ar: "", si: "", ta: "" });
 export function whatsappLink(number: string, order: any) {
-  const msg = `UniGlobe Fashion · UGF-${order.id}\n${order.customer.name}\n${order.items.map((i: any) => `${i.name} ${i.variant} × ${i.quantity}`).join("\n")}\n${money(order.total)}`;
+  const msg = `UniGlobe Fashion · UGF-${order.id}\n${order.customer.name}\n${order.items.map((i: any) => `${i.name} ${i.variant} × ${i.quantity}`).join("\n")}\n${money(order.total, "en", order.currency)}`;
   return `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
 }
 export async function record(db: D1Database, kind: string, id = "main") {
@@ -174,6 +209,9 @@ export async function products(
       const p = JSON.parse(r.data);
       return {
         ...p,
+        collections: p.collections || (p.collection ? [p.collection] : []),
+        badges: p.badges || [],
+        sku: p.sku || "",
         id: r.id,
         version: r.version,
         inventoryRevision: r.inventory_revision,

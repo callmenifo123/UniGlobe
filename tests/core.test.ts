@@ -689,7 +689,7 @@ describe("configuration and security regression checks", () => {
   });
   it("prevents deleting products referenced by orders at API and database layers", async () => {
     await open();
-    const u = await user(["products.write"]);
+    const u = await user(["products.write", "products.delete"]);
     await placeOrder(e, order());
     const id = order().items[0].productId;
     expect(

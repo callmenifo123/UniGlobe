@@ -15,14 +15,17 @@
           "'": "&#39;",
         })[c],
     );
-  const money = (n) =>
+  let storeCurrency = "LKR",
+    deliveryRules = [],
+    orderingEnabled = false;
+  const money = (n, currency = storeCurrency) =>
     new Intl.NumberFormat(
       { ar: "ar-SA", si: "si-LK", ta: "ta-LK" }[
         document.documentElement.lang
       ] || "en-LK",
       {
         style: "currency",
-        currency: "LKR",
+        currency,
         minimumFractionDigits: n % 100 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
       },
@@ -81,7 +84,11 @@
     if (!catalog) {
       const r = await fetch("/api/catalog");
       if (!r.ok) throw new Error("Could not load the catalog. Please refresh.");
-      catalog = (await r.json()).products;
+      const data = await r.json();
+      catalog = data.products;
+      storeCurrency = data.currency || "LKR";
+      deliveryRules = data.deliveryRules || [];
+      orderingEnabled = data.orderingEnabled;
     }
     return catalog;
   }
@@ -96,6 +103,7 @@
         available:
           !!p &&
           !!v &&
+          p.currency === storeCurrency &&
           v.available &&
           (v.stock === null || v.stock >= line.quantity) &&
           (!$("#checkout-form") ||
@@ -107,22 +115,42 @@
     await load();
     const lines = resolve(read());
     const total = lines.reduce(
-      (n, x) => n + (x.p ? (x.p.salePrice ?? x.p.price) * x.quantity : 0),
+      (n, x) =>
+        n + (x.p ? (x.v?.price ?? x.p.salePrice ?? x.p.price) * x.quantity : 0),
       0,
     );
     const body = lines
       .map(
         (x, i) =>
-          `<div class="bag-item">${x.p?.images[0] ? `<img src="${esc(x.p.images[0])}" alt="${esc(name(x.p))}" width="110" height="140">` : ""}<div><h3>${esc(name(x.p))}</h3><p>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / ") || tr("Details to be confirmed"))}</p>${!x.available ? `<p class="form-error">${esc(tr("No longer available"))}</p>` : ""}<label>${esc(tr("Quantity"))} <input type="number" data-quantity="${i}" min="1" max="20" value="${x.quantity}" aria-label="${esc(tr("Quantity"))}: ${esc(name(x.p))}"></label><button class="text-button" data-remove="${i}">${esc(tr("Remove"))}</button></div><strong>${x.p ? money((x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`,
+          `<div class="bag-item">${x.p?.images[0] ? `<img src="${esc(x.p.images[0])}" alt="${esc(name(x.p))}" width="110" height="140">` : ""}<div><h3>${esc(name(x.p))}</h3><p>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / ") || tr("Details to be confirmed"))}</p>${!x.available ? `<p class="form-error">${esc(tr("No longer available"))}</p>` : ""}<label>${esc(tr("Quantity"))} <input type="number" data-quantity="${i}" min="1" max="20" value="${x.quantity}" aria-label="${esc(tr("Quantity"))}: ${esc(name(x.p))}"></label><button class="text-button" data-remove="${i}">${esc(tr("Remove"))}</button></div><strong>${x.p ? money((x.v?.price ?? x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`,
       )
       .join("");
     if ($("#bag-content"))
       $("#bag-content").innerHTML = lines.length
-        ? `<div class="bag-layout"><div>${body}</div><aside class="order-summary"><h2>${esc(tr("Your selection"))}</h2><div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p dir="auto">${esc($("#bag-content")?.dataset.deliveryNote || tr("Delivery arrangements will be confirmed with you."))}</p>${lines.every((x) => x.available) ? `<a class="button wide" href="/checkout">${esc(tr("Continue to checkout"))} ↗</a>` : `<p class="notice">${esc(tr("Remove unavailable items to continue."))}</p>`}<a class="underlink" href="/fashion/shop">${esc(tr("Continue exploring"))}</a></aside></div>`
+        ? `<div class="bag-layout"><div>${body}</div><aside class="order-summary"><h2>${esc(tr("Your selection"))}</h2><div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p dir="auto">${esc($("#bag-content")?.dataset.deliveryNote || tr("Delivery arrangements will be confirmed with you."))}</p>${orderingEnabled && lines.every((x) => x.available) ? `<a class="button wide" href="/checkout">${esc(tr("Continue to checkout"))} ↗</a>` : `<p class="notice">${esc(tr(orderingEnabled ? "Remove unavailable items to continue." : "Ordering is not open yet. You can explore the collection and save pieces in your bag."))}</p>`}<a class="underlink" href="/fashion/shop">${esc(tr("Continue exploring"))}</a></aside></div>`
         : `<div class="empty-state"><h2>${esc(tr("Your selection"))}</h2><p>${esc(tr("Your bag is currently empty."))}</p><a class="button" href="/fashion/shop">${esc(tr("Explore the collection"))} ↗</a></div>`;
     if ($("#checkout-summary")) {
+      const country = $("#checkout-form").elements.country.value,
+        region = $("#checkout-form").elements.region.value.trim().toLowerCase();
+      const rule = deliveryRules
+        .filter(
+          (r) =>
+            r.enabled &&
+            r.country === country &&
+            (!r.region || r.region.trim().toLowerCase() === region),
+        )
+        .sort(
+          (a, b) =>
+            Number(!!b.region) - Number(!!a.region) || a.priority - b.priority,
+        )[0];
+      const fee = rule
+        ? rule.freeAbove !== null && total >= rule.freeAbove
+          ? 0
+          : rule.fee
+        : 0;
+
       $("#checkout-summary").innerHTML =
-        `<h2>${esc(tr("Your selection"))}</h2>${lines.map((x) => `<div class="receipt-item"><span>${esc(name(x.p))}<small>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / "))} · ${esc(tr("Quantity"))} ${x.quantity}</small></span><strong>${x.p ? money((x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`).join("")}<div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p>${esc(tr("Delivery arrangements will be confirmed with you."))}</p><a href="/bag" class="underlink">${esc(tr("Edit bag"))}</a>`;
+        `<h2>${esc(tr("Your selection"))}</h2>${lines.map((x) => `<div class="receipt-item"><span>${esc(name(x.p))}<small>${esc([x.v?.size, x.v?.color].filter(Boolean).join(" / "))} · ${esc(tr("Quantity"))} ${x.quantity}</small></span><strong>${x.p ? money((x.v?.price ?? x.p.salePrice ?? x.p.price) * x.quantity) : "—"}</strong></div>`).join("")}<div class="receipt-total"><span>${esc(tr("Subtotal"))}</span><strong>${money(total)}</strong></div><p>${esc(tr("Delivery"))}: ${rule ? money(fee) : esc(tr("Delivery arrangements will be confirmed with you."))}</p><div class="receipt-total"><span>${esc(tr("Order total"))}</span><strong>${money(total + fee)}</strong></div><a href="/bag" class="underlink">${esc(tr("Edit bag"))}</a>`;
       const invalid = !lines.length || lines.some((x) => !x.available);
       const form = $("#checkout-form");
       form.querySelector("button").disabled =
@@ -134,6 +162,57 @@
         : "";
     }
   }
+  document.querySelectorAll("[data-step]").forEach((button) =>
+    button.addEventListener("click", () => {
+      const input = button.parentElement.querySelector("input");
+      input.value = String(
+        Math.max(
+          1,
+          Math.min(20, Number(input.value) + Number(button.dataset.step)),
+        ),
+      );
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }),
+  );
+  $(".filter-toggle")?.addEventListener("click", (e) => {
+    const form = $("#catalog-filters"),
+      marker = document.createComment("filters"),
+      dialog = document.createElement("dialog");
+    dialog.className = "filter-sheet";
+    dialog.setAttribute("aria-label", tr("Filters & sort"));
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "text-button";
+    close.textContent = tr("Close");
+    close.onclick = () => dialog.close();
+    form.before(marker);
+    dialog.append(close, form);
+    form.classList.add("is-open");
+    document.body.append(dialog);
+    e.currentTarget.setAttribute("aria-expanded", "true");
+    dialog.showModal();
+    dialog.addEventListener("close", () => {
+      marker.replaceWith(form);
+      form.classList.remove("is-open");
+      dialog.remove();
+      $(".filter-toggle").setAttribute("aria-expanded", "false");
+      $(".filter-toggle").focus();
+    });
+  });
+  $("#add-to-bag")?.addEventListener("change", async (e) => {
+    if (e.target.name !== "variant") return;
+    await load();
+    const p = catalog.find((p) => p.id === $("#add-to-bag").dataset.product),
+      v = p?.variants.find((v) => v.id === e.target.value);
+    if (p && v && $("[data-product-price]"))
+      $("[data-product-price]").textContent = money(
+        v.price ?? p.salePrice ?? p.price,
+        p.currency,
+      );
+  });
+  $("#checkout-form")?.elements.region?.addEventListener("change", () =>
+    render().catch((e) => toast(e.message)),
+  );
   write(read());
   $(".language select")?.addEventListener("change", (e) =>
     e.target.form.requestSubmit(),

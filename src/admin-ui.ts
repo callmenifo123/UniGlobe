@@ -39,18 +39,30 @@ export function productForm(p: Partial<Product>, tax: any[]) {
       <section class="panel">
         <h2>Price & merchandising</h2>
         <div class="form-grid">
-          ${field("Price (LKR)", "price", (p.price || 150000) / 100, "number", 'required min="0.01" step="0.01"')}${field("Sale price (LKR, optional)", "salePrice", p.salePrice ? p.salePrice / 100 : "", "number", 'min="0.01" step="0.01"')}<label
+          ${field("Regular price (selected currency)", "price", (p.price || 150000) / 100, "number", 'required min="0.01" step="0.01"')}${field("Sale price (selected currency, optional)", "salePrice", p.salePrice ? p.salePrice / 100 : "", "number", 'min="0.01" step="0.01"')}<label
             >Category<select name="category">
               <option value="">Uncategorized</option>
               ${tax.filter((x) => x.kind === "categories").map((x) => html`<option value="${x.id}" ${raw(x.id === p.category ? "selected" : "")}>${x.name.en}</option>`)}
             </select></label
           ><label
-            >Collection<select name="collection">
+            >Primary collection<select name="collection">
               <option value="">No collection</option>
               ${tax.filter((x) => x.kind === "collections").map((x) => html`<option value="${x.id}" ${raw(x.id === p.collection ? "selected" : "")}>${x.name.en}</option>`)}
             </select></label
           >${field("Display priority (lower comes first)", "priority", p.priority || 0, "number")}
         </div>
+        <fieldset>
+          <legend>Additional collections</legend>
+          <div class="permission-groups">
+            ${tax.filter((x) => x.kind === "collections").map((x) => html`<label class="check"><input type="checkbox" name="collections" value="${x.id}" ${raw(p.collections?.includes(x.id) ? "checked" : "")} />${text(x.name)}</label>`)}
+          </div>
+        </fieldset>
+        ${field("Product SKU", "sku", p.sku || "")}
+        <label
+          >Currency<select name="currency">
+            ${["LKR", "SAR", "USD"].map((v) => html`<option value="${v}" ${raw((p.currency || "LKR") === v ? "selected" : "")}>${v}</option>`)}
+          </select></label
+        >
         <div class="check-row">
           ${[
             ["visible", "Visible"],
@@ -116,6 +128,7 @@ export function productForm(p: Partial<Product>, tax: any[]) {
                 color: "",
                 sku: "",
                 stock: null,
+                price: null,
                 available: true,
               },
             ]
@@ -123,7 +136,7 @@ export function productForm(p: Partial<Product>, tax: any[]) {
             (v) =>
               html`<fieldset class="variant-row">
                 <legend>Variant</legend>
-                ${field("Stable ID", "variant.id", v.id, "text", 'required pattern="[a-zA-Z0-9_-]+"')}${field("Size", "variant.size", v.size)}${field("Color", "variant.color", v.color)}${field("SKU", "variant.sku", v.sku)}${field("Stock", "variant.stock", v.stock ?? "", "number", 'min="0"')}<label
+                ${field("Stable ID", "variant.id", v.id, "text", 'required pattern="[a-zA-Z0-9_-]+"')}${field("Size", "variant.size", v.size)}${field("Color", "variant.color", v.color)}${field("SKU", "variant.sku", v.sku)}${field("Stock", "variant.stock", v.stock ?? "", "number", 'min="0"')}${field("Price override (optional)", "variant.price", v.price ? v.price / 100 : "", "number", 'min="0.01" step="0.01"')}<label
                   class="check"
                   ><input
                     type="checkbox"
@@ -139,6 +152,44 @@ export function productForm(p: Partial<Product>, tax: any[]) {
         <button type="button" class="button secondary-button" data-add-variant>
           Add variant
         </button>
+      </section>
+      <section class="panel">
+        <h2>Product badges</h2>
+        <p>
+          Timing is in UTC. Empty dates mean no time limit. Create labels and
+          styles in Product badges.
+        </p>
+        ${tax
+          .filter((x) => x.kind === "badges")
+          .map((x) => {
+            const b = p.badges?.find((b) => b.id === x.id);
+            return html`<fieldset class="badge-row" data-badge-id="${x.id}">
+              <legend>${text(x.name)}</legend>
+              <label class="check"
+                ><input
+                  type="checkbox"
+                  name="badge.enabled"
+                  ${raw(b?.enabled ? "checked" : "")}
+                />Assign this badge</label
+              >
+              <div class="form-grid">
+                ${field("Priority", "badge.priority", b?.priority || 0, "number")}${field("Start (UTC)", "badge.start", b?.start?.slice(0, 16) || "", "datetime-local")}${field("End (UTC)", "badge.end", b?.end?.slice(0, 16) || "", "datetime-local")}
+              </div>
+              <label class="check"
+                ><input
+                  type="checkbox"
+                  name="badge.card"
+                  ${raw(b?.card !== false ? "checked" : "")}
+                />Product cards</label
+              ><label class="check"
+                ><input
+                  type="checkbox"
+                  name="badge.page"
+                  ${raw(b?.page !== false ? "checked" : "")}
+                />Product page</label
+              >
+            </fieldset>`;
+          })}
       </section>
       <section class="panel">
         <h2>Search & sharing</h2>
@@ -258,10 +309,20 @@ export function recordForm(kind: string, id: string, data: any) {
       data-method="PUT"
       data-record-kind="${kind}"
     >
-      <input type="hidden" name="version" value="${data?.version || 0}" />${
+      ${kind === "content" && id === "fashion" ? html`<p>Fashion campaign copy, imagery and section order are managed in <a class="underlink" href="/admin/sections">Fashion merchandising</a>. Edit search metadata here.</p>` : ""}<input
+        type="hidden"
+        name="version"
+        value="${data?.version || 0}"
+      />${
         kind === "content"
           ? Object.entries(data || {})
-              .filter(([k]) => k !== "version" && k !== "socials")
+              .filter(
+                ([k]) =>
+                  k !== "version" &&
+                  k !== "socials" &&
+                  (id !== "fashion" ||
+                    ["seoTitle", "seoDescription"].includes(k)),
+              )
               .map(([k, v]) =>
                 typeof v === "object" && v !== null
                   ? localizedFields(
@@ -307,7 +368,7 @@ export function recordForm(kind: string, id: string, data: any) {
           : ""
       }${
         kind === "contacts"
-          ? html`${field("Email", "email", data.email, "email")}${field("Phone", "phone", data.phone, "tel")}${field("WhatsApp", "whatsapp", data.whatsapp, "tel")}${field("Address", "address", data.address)}${field("Working hours", "hours", data.hours)}
+          ? html`${field("Email", "email", data.email, "email")}${field("Support email", "supportEmail", data.supportEmail || "", "email")}${field("Sri Lanka contact", "sriLankaContact", data.sriLankaContact || "")}${field("Saudi Arabia contact", "saudiContact", data.saudiContact || "")}${field("Phone", "phone", data.phone, "tel")}${field("WhatsApp", "whatsapp", data.whatsapp, "tel")}${field("Address", "address", data.address)}${field("Working hours", "hours", data.hours)}
               <fieldset>
                 <legend>Social channels</legend>
                 <div id="social-fields">
@@ -369,7 +430,24 @@ export function recordForm(kind: string, id: string, data: any) {
                 Requires TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY. Server
                 rate limits and the spam trap are always active.
               </p>
+              <label
+                >Store currency<select name="currency">
+                  ${["LKR", "SAR", "USD"].map((v) => html`<option value="${v}" ${raw((data.currency || "LKR") === v ? "selected" : "")}>${v}</option>`)}
+                </select></label
+              >
+              <p>
+                Prices are not converted automatically. Products must use the
+                store currency to be ordered together.
+              </p>
+              ${localizedFields("Checkout introduction", "checkoutIntro", data.checkoutIntro, true)}
               <h2>Email</h2>
+              <label class="check"
+                ><input
+                  type="checkbox"
+                  name="customerEmailEnabled"
+                  ${raw(data.customerEmailEnabled !== false ? "checked" : "")}
+                />Send customer confirmation emails when email is enabled</label
+              >
               <label class="check"
                 ><input
                   type="checkbox"
@@ -464,6 +542,7 @@ export function ordersPage(orders: any[], query: any, statuses: string[]) {
       q: query.q || "",
       status: query.status || "",
       archived: query.archived || "",
+      sort: query.sort || "newest",
       page: String(page),
     });
   return html`<div class="admin-heading">
@@ -489,6 +568,23 @@ export function ordersPage(orders: any[], query: any, statuses: string[]) {
           type="checkbox"
           ${raw(query.archived ? "checked" : "")}
         />Show archived</label
+      ><label
+        >Sort orders<select name="sort">
+          ${[
+            ["newest", "Newest first"],
+            ["oldest", "Oldest first"],
+            ["total-high", "Highest total"],
+            ["total-low", "Lowest total"],
+          ].map(
+            ([v, label]) =>
+              html`<option
+                value="${v}"
+                ${raw((query.sort || "newest") === v ? "selected" : "")}
+              >
+                ${label}
+              </option>`,
+          )}
+        </select></label
       ><button class="button">Filter</button>
     </form>
     <div class="panel table-scroll">
@@ -509,7 +605,7 @@ export function ordersPage(orders: any[], query: any, statuses: string[]) {
                 <td><a href="/admin/orders/${o.id}">UGF-${o.id}</a></td>
                 <td>${JSON.parse(o.customer).name}</td>
                 <td><span class="badge">${o.status}</span></td>
-                <td>${money(o.total)}</td>
+                <td>${money(o.total, "en", o.currency)}</td>
                 <td>${o.created_at}</td>
               </tr>`,
           )}
@@ -523,7 +619,12 @@ export function ordersPage(orders: any[], query: any, statuses: string[]) {
       ${query.hasNext ? html`<a class="underlink" href="${pageLink(query.page + 1)}">Next →</a>` : ""}
     </nav>`;
 }
-export function orderPage(o: any, jobs: any[], statuses: string[]) {
+export function orderPage(
+  o: any,
+  jobs: any[],
+  statuses: string[],
+  history: any[] = [],
+) {
   return html`<div class="admin-heading">
       <div>
         <div class="eyebrow">ORDER · ${o.created_at} UTC</div>
@@ -538,12 +639,21 @@ export function orderPage(o: any, jobs: any[], statuses: string[]) {
           (i: any) =>
             html`<div class="receipt-item">
               <span
-                >${i.name}<small>${i.variant} · Qty ${i.quantity}</small></span
-              ><strong>${money(i.price * i.quantity)}</strong>
+                >${i.name}<small
+                  >${i.variant} · Qty
+                  ${i.quantity}${i.sku ? " · SKU " + i.sku : ""}</small
+                ></span
+              ><strong>${money(i.price * i.quantity, "en", o.currency)}</strong>
             </div>`,
         )}
+        <p>
+          Subtotal: ${money(o.subtotal || o.total, "en", o.currency)} ·
+          Delivery:
+          ${o.delivery_rule ? money(o.delivery_fee, "en", o.currency) : "To be confirmed"}
+        </p>
         <div class="receipt-total">
-          <strong>Total</strong><strong>${money(o.total)}</strong>
+          <strong>Total</strong
+          ><strong>${money(o.total, "en", o.currency)}</strong>
         </div>
         <h2>Customer & delivery</h2>
         <p>
@@ -584,6 +694,25 @@ ${o.notes}</textarea></label
         ><span class="save-status"></span>
       </form>
     </div>
+    <section class="panel">
+      <h2>Status history</h2>
+      ${
+        history.length
+          ? html`<ol class="order-history">
+              ${history.map(
+                (h) =>
+                  html`<li>
+                    <strong>${h.status}</strong> ·
+                    ${h.username || h.actor || "Checkout"}<small
+                      >${h.created_at}</small
+                    >
+                    <p>${h.note}</p>
+                  </li>`,
+              )}
+            </ol>`
+          : html`<p>Order received ${o.created_at}.</p>`
+      }
+    </section>
     <section class="panel">
       <h2>Notification delivery</h2>
       ${

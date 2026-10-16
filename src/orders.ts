@@ -1,3 +1,4 @@
+import { entries, deliveryQuote } from "./commerce";
 import { checkoutSchema, products, record } from "./model";
 import type { Env } from "./model";
 import { hash, random } from "./security";
@@ -37,11 +38,14 @@ export async function placeOrder(env: Env, body: unknown) {
       !p.countries.includes(data.customer.country)
     )
       throw new Error("An item is no longer available for this destination");
-    const price = p.salePrice ?? p.price;
+    if (p.currency !== (settings.currency || "LKR"))
+      throw new Error("This item is not priced in the current store currency");
+    const price = v.price ?? p.salePrice ?? p.price;
     total += price * line.quantity;
     return {
       productId: p.id,
       variantId: v.id,
+      sku: v.sku || p.sku || "",
       name: p.name.en,
       variant:
         [v.size, v.color].filter(Boolean).join(" / ") ||
@@ -52,6 +56,14 @@ export async function placeOrder(env: Env, body: unknown) {
       version: p.version,
     };
   });
+  const subtotal = total;
+  const delivery = deliveryQuote(
+    await entries(env.DB, "delivery"),
+    data.customer.country,
+    data.customer.region,
+    subtotal,
+  );
+  total += delivery?.fee || 0;
   const token = random();
   const batch: D1PreparedStatement[] = [];
   // A CHECK constraint makes insufficient stock abort the entire transaction.
@@ -81,7 +93,7 @@ export async function placeOrder(env: Env, body: unknown) {
     );
   batch.push(
     env.DB.prepare(
-      "INSERT INTO orders(token,idempotency,request_hash,customer,items,total) VALUES(?,?,?,?,?,?)",
+      "INSERT INTO orders(token,idempotency,request_hash,customer,items,total,currency,subtotal,delivery_fee,delivery_rule) VALUES(?,?,?,?,?,?,?,?,?,?)",
     ).bind(
       token,
       data.key,
@@ -89,13 +101,22 @@ export async function placeOrder(env: Env, body: unknown) {
       JSON.stringify(data.customer),
       JSON.stringify(items),
       total,
+      settings.currency || "LKR",
+      subtotal,
+      delivery?.fee || 0,
+      delivery ? JSON.stringify(delivery) : "",
     ),
+  );
+  batch.push(
+    env.DB.prepare(
+      "INSERT INTO order_history(order_id,status) SELECT id,'New' FROM orders WHERE token=?",
+    ).bind(token),
   );
   const jobs: { channel: string; destination: string }[] = [];
   if (settings.emailEnabled) {
     for (const destination of settings.emailRecipients)
       jobs.push({ channel: "email", destination });
-    if (data.customer.email)
+    if (data.customer.email && settings.customerEmailEnabled !== false)
       jobs.push({ channel: "email", destination: data.customer.email });
   }
   if (settings.telegramEnabled)

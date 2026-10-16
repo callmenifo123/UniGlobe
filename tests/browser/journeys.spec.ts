@@ -335,6 +335,13 @@ test("key public and admin journeys meet automated WCAG AA checks", async ({
     "/admin/products/new",
     "/admin/orders",
     "/admin/branding",
+    "/admin/categories",
+    "/admin/collections",
+    "/admin/sections",
+    "/admin/badges",
+    "/admin/delivery",
+    "/admin/users",
+    "/admin/security",
   ]) {
     await page.goto(path);
     const result = await new AxeBuilder({ page })
@@ -471,4 +478,68 @@ test("separate admin completes temporary-password and QR authenticator onboardin
     page.getByText("Authenticator enrolled · Required by policy"),
   ).toBeVisible();
   await api.dispose();
+});
+
+test("admin creates collections, scheduled badges and a curated Fashion section that persist on the storefront", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies(cookies);
+  await page.goto("/admin/collections");
+  let form = page.locator('form[data-api$="/new"]');
+  await form.getByLabel("Stable identifier").fill("browser-studio");
+  await form.locator('[name="name.en"]').fill("Studio collection");
+  await form.locator('[name="name.ar"]').fill("مجموعة الاستوديو");
+  await form.getByLabel("URL slug").fill("studio-edit");
+  await form.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(
+    page.locator("summary").filter({ hasText: "Studio collection" }),
+  ).toBeVisible();
+  await page.goto("/admin/badges");
+  form = page.locator('form[data-api$="/new"]');
+  await form.getByLabel("Stable identifier").fill("browser-exclusive");
+  await form.getByLabel("Badge preset").selectOption("Exclusive");
+  await form.getByLabel("Enabled", { exact: true }).check();
+  await form.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(
+    page.locator("summary").filter({ hasText: "Exclusive" }),
+  ).toBeVisible();
+  await page.goto("/admin/products");
+  await page.getByRole("link", { name: "Forever tee", exact: true }).click();
+  await page.getByLabel("Studio collection", { exact: true }).check();
+  const badge = page.locator('.badge-row[data-badge-id="browser-exclusive"]');
+  await badge.getByLabel("Assign this badge").check();
+  await page.getByRole("button", { name: "Save product", exact: true }).click();
+  await expect(page.locator(".save-status")).toHaveText("Saved successfully");
+  await page.goto("/fashion/collections/studio-edit?lang=en");
+  await expect(page.locator("h1")).toContainText("Studio collection");
+  await expect(page.getByText("Exclusive", { exact: true })).toBeVisible();
+  await expect(page.locator(".product-card")).toHaveCount(1);
+  await page.goto("/admin/sections");
+  form = page.locator('form[data-api$="/new"]');
+  await form.getByLabel("Stable identifier").fill("browser-campaign");
+  await form.getByLabel("Section type").selectOption("featured-collection");
+  await form.locator('[name="title.en"]').fill("The studio edit");
+  await form.locator('[name="collection"]').selectOption("browser-studio");
+  await form.getByRole("button", { name: "Save section" }).click();
+  await expect(
+    page.locator("summary").filter({ hasText: "The studio edit" }),
+  ).toBeVisible();
+  await page.goto("/fashion");
+  await expect(
+    page.getByRole("heading", { name: "The studio edit", exact: true }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/fashion/shop");
+  await page.getByRole("button", { name: "Filters & sort" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .locator('[name="collection"]')
+    .selectOption("browser-studio");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Apply", exact: true })
+    .click();
+  await expect(page.locator(".product-card")).toHaveCount(1);
 });

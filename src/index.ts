@@ -1,3 +1,5 @@
+import { entries, member, activeBadges, deliveryQuote } from "./commerce";
+import { curatedFashion } from "./fashion";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { bodyLimit } from "hono/body-limit";
@@ -108,8 +110,14 @@ app.route("/", admin);
 // The admin app only matches its explicit routes; all other routes continue below.
 app.get("/api/catalog", async (c) => {
   const list = await products(c.env.DB);
+  const ordering = await record(c.env.DB, "ordering");
   c.header("Cache-Control", "no-store");
-  return c.json({ products: list });
+  return c.json({
+    products: list,
+    currency: ordering?.currency || "LKR",
+    orderingEnabled: !!ordering?.enabled,
+    deliveryRules: await entries(c.env.DB, "delivery", true),
+  });
 });
 app.post("/api/orders", async (c) => {
   if (c.req.header("Origin") !== new URL(c.req.url).origin)
@@ -178,6 +186,10 @@ app.get("/sitemap.xml", async (c) => {
     "/real-estate",
     "/academy",
     ...list.map((p) => "/fashion/products/" + p.slug),
+    ...[
+      ...(await entries(c.env.DB, "categories", true)),
+      ...(await entries(c.env.DB, "collections", true)),
+    ].map((t) => "/fashion/" + t.kind + "/" + (t.slug || t.id)),
   ];
   return c.body(
     `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map((p) => `<url><loc>${escape(c.env.SITE_URL + p)}</loc></url>`).join("")}</urlset>`,
@@ -226,18 +238,51 @@ app.get("*", async (c) => {
     };
   } else if (path === "/fashion") {
     page = "fashion";
-    body = fashion(content, await products(c.env.DB), l, branding);
-  } else if (path === "/fashion/shop") {
+    const list = await products(c.env.DB),
+      badges = await entries(c.env.DB, "badges", true);
+    list.forEach(
+      (p) => ((p as any).displayBadges = activeBadges(p, badges, "card")),
+    );
+    body = curatedFashion(
+      await entries(c.env.DB, "sections", true),
+      list,
+      [
+        ...(await entries(c.env.DB, "categories", true)),
+        ...(await entries(c.env.DB, "collections", true)),
+      ],
+      l,
+    );
+  } else if (
+    path === "/fashion/shop" ||
+    /^\/fashion\/(categories|collections)\/[^/]+$/.test(path)
+  ) {
     page = "fashion";
     title = text(content?.seoTitle, l) || "Collection · UniGlobe Fashion";
     const q = c.req.query();
+    let landing: any = null;
+    if (path !== "/fashion/shop") {
+      const [, , kind, slug] = path.split("/");
+      landing = (await entries(c.env.DB, kind, true)).find(
+        (t) => (t.slug || t.id) === slug,
+      );
+      if (!landing) return c.notFound();
+      q[kind === "categories" ? "category" : "collection"] = landing.id;
+      title = text(landing.seoTitle, l) || text(landing.name, l);
+      description =
+        text(landing.seoDescription, l) || text(landing.description, l);
+      image = landing.hero || landing.cover || "";
+    }
     let list = await products(c.env.DB);
+    const badges = await entries(c.env.DB, "badges", true);
+    list.forEach(
+      (p) => ((p as any).displayBadges = activeBadges(p, badges, "card")),
+    );
     if (q.q)
       list = list.filter((p) =>
         text(p.name, l).toLowerCase().includes(q.q.toLowerCase()),
       );
     if (q.category) list = list.filter((p) => p.category === q.category);
-    if (q.collection) list = list.filter((p) => p.collection === q.collection);
+    if (q.collection) list = list.filter((p) => member(p, q.collection));
     if (q.availability === "available")
       list = list.filter((p) =>
         p.variants.some((v) => v.available && v.stock !== 0),
@@ -252,17 +297,24 @@ app.get("*", async (c) => {
       list.sort((a, b) => (b.salePrice ?? b.price) - (a.salePrice ?? a.price));
     if (q.sort === "name")
       list.sort((a, b) => text(a.name, l).localeCompare(text(b.name, l)));
-    const tax = (
-      await c.env.DB.prepare(
-        "SELECT * FROM records WHERE kind IN ('categories','collections')",
-      ).all<any>()
-    ).results.map((r) => ({ ...JSON.parse(r.data), id: r.id, kind: r.kind }));
+    const tax = [
+      ...(await entries(c.env.DB, "categories", true)),
+      ...(await entries(c.env.DB, "collections", true)),
+    ];
     body = listing(
       list,
       l,
       tax.sort((a, b) => a.priority - b.priority),
       q,
-      content,
+      landing
+        ? {
+            ...landing,
+            title: landing.name,
+            intro: landing.description,
+            eyebrow: content?.eyebrow,
+            image: landing.hero || landing.cover,
+          }
+        : content,
     );
   } else if (path.startsWith("/fashion/products/")) {
     page = "fashion";
@@ -272,6 +324,11 @@ app.get("*", async (c) => {
     title = text(p.seoTitle, l) || text(p.name, l);
     description = text(p.seoDescription, l) || text(p.shortDescription, l);
     image = p.images[0] ? c.env.SITE_URL + p.images[0] : "";
+    const badges = await entries(c.env.DB, "badges", true);
+    (p as any).pageBadges = activeBadges(p, badges, "page");
+    list.forEach(
+      (p) => ((p as any).displayBadges = activeBadges(p, badges, "card")),
+    );
     body = detail(
       p,
       l,
@@ -286,8 +343,11 @@ app.get("*", async (c) => {
       image: p.images.map((x) => c.env.SITE_URL + x),
       offers: {
         "@type": "Offer",
-        priceCurrency: "LKR",
-        price: (p.salePrice ?? p.price) / 100,
+        priceCurrency: p.currency,
+        price:
+          (p.variants.find((v) => v.available && v.stock !== 0)?.price ??
+            p.salePrice ??
+            p.price) / 100,
         url: c.env.SITE_URL + path,
         availability: !p.variants.some((v) => v.available && v.stock !== 0)
           ? "https://schema.org/OutOfStock"
@@ -299,10 +359,12 @@ app.get("*", async (c) => {
       },
     };
   } else if (path === "/bag") {
+    page = "fashion";
     body = bagPage(l, await record(c.env.DB, "ordering"));
     title = "Your bag · UniGlobe Fashion";
     c.header("X-Robots-Tag", "noindex");
   } else if (path === "/checkout") {
+    page = "fashion";
     body = checkoutPage(
       l,
       await record(c.env.DB, "ordering"),

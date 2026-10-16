@@ -2064,3 +2064,1056 @@ p,
   margin-block-start: 32px;
   padding-block-start: 24px;
 }
+/* UniGlobe brand system: Holdings violet-blue; Fashion navy, teal and gold. */
+:root {
+  --ink: #102b50;
+  --brand: #5364ba;
+  --accent: #107e8d;
+  --gold: #b69a50;
+  --paper: #fafbfe;
+  --line: #d7deeb;
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+.button {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+}
+.button:hover {
+  background: #284d80;
+}
+.secondary-button {
+  color: var(--ink);
+  background: transparent;
+  border-color: #a5b3c6;
+}
+.secondary-button:hover {
+  background: #e5ebf5;
+}
+.site-header {
+  min-height: 126px;
+  background: #fafbfe;
+  border-bottom: 1px solid var(--line);
+  gap: 32px;
+}
+.brand-signature img {
+  height: 100px;
+  width: 110px;
+  object-fit: contain;
+}
+.site-header nav a {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.site-footer {
+  background: #11294b;
+  color: #f5f7ff;
+}
+.holdings-intro {
+  position: relative;
+  overflow: hidden;
+  padding-top: 90px;
+  padding-bottom: 80px;
+}
+.holdings-intro h1 {
+  position: relative;
+  max-width: 850px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 600;
+  font-size: clamp(54px, 7.8vw, 116px);
+  letter-spacing: -0.065em;
+  line-height: 1;
+}
+.holdings-intro .eyebrow {
+  color: #4758a5;
+}
+.holdings-orbit {
+  position: absolute;
+  width: 530px;
+  height: 530px;
+  right: -150px;
+  top: -30px;
+  border: 1px solid #6474c63d;
+  border-radius: 50%;
+  transform: rotate(-30deg);
+  pointer-events: none;
+}
+.holdings-orbit span {
+  display: block;
+  position: absolute;
+  inset: 10% -12%;
+  border: 1px solid #6474c638;
+  border-radius: 50%;
+}
+.holdings-orbit span:nth-child(2) {
+  inset: -10% 20%;
+}
+.holdings-orbit span:nth-child(3) {
+  inset: 30% -20%;
+}
+.divisions {
+  padding-block: 50px 80px;
+}
+.divisions h2 {
+  font-family: Arial, sans-serif;
+  font-size: clamp(36px, 4vw, 60px);
+  font-weight: 500;
+}
+.division-row {
+  border-color: var(--line);
+  padding-block: 30px;
+}
+.division-row h3 {
+  font-size: clamp(28px, 3.5vw, 52px);
+}
+.division-row:hover {
+  color: #5364ba;
+}
+.division-feature {
+  max-width: none;
+  margin: 0;
+  background: #e8edfb;
+  grid-template-columns: 1fr 1fr;
+}
+.division-feature .division-copy {
+  background: #e8edfb;
+}
+.division-feature .division-image {
+  max-height: 540px;
+}
+.division-feature .division-image img {
+  object-position: center 30%;
+}
+.division-copy h2 {
+  color: var(--ink);
+}
+.division-copy .large-number {
+  color: #6173be;
+}
+.status-dot {
+  background: #5364ba;
+}
+.fashion {
+  --paper: #fcfbf8;
+  background: var(--paper);
+  color: #102b50;
+}
+.fashion h1,
+.fashion h2,
+.fashion h3 {
+  font-family: Arial, Helvetica, sans-serif;
+}
+.fashion .site-header {
+  background: var(--paper);
+  min-height: 148px;
+}
+.fashion .brand-signature img {
+  width: 150px;
+  height: 124px;
+}
+.fashion .site-header nav {
+  gap: 34px;
+}
+.fashion .site-header nav a {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.fashion .site-footer {
+  background: #092746;
+}
+.fashion .footer-brand {
+  font-size: 34px;
+  font-weight: 600;
+}
+.fashion .footer-brand span {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.fashion-canvas {
+  overflow: hidden;
+}
+.campaign {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  min-height: 730px;
+  background: #dcebf0;
+}
+.campaign-visual {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+.campaign-visual img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+}
+.campaign-copy {
+  position: relative;
+  z-index: 1;
+  padding: 80px 7vw;
+  align-self: center;
+}
+.campaign > .campaign-copy {
+  grid-column: 1;
+  grid-row: 1;
+  padding-bottom: 180px;
+}
+.campaign-copy h1 {
+  font-size: clamp(64px, 7.4vw, 120px);
+  font-weight: 700;
+  letter-spacing: -0.075em;
+  line-height: 0.94;
+  margin-block: 26px;
+  max-width: 800px;
+}
+.campaign-copy p {
+  max-width: 430px;
+  font-size: 16px;
+  line-height: 1.7;
+}
+.campaign-copy .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #16566a;
+}
+.campaign-copy .button {
+  margin-top: 12px;
+  min-width: 190px;
+  justify-content: space-between;
+}
+.campaign-secondary {
+  position: absolute;
+  left: 34%;
+  bottom: -55px;
+  width: 19%;
+  z-index: 2;
+}
+.campaign-secondary img {
+  display: block;
+  aspect-ratio: 4/5;
+  width: 100%;
+  object-fit: cover;
+}
+.campaign-secondary span {
+  display: block;
+  background: #102b50;
+  color: white;
+  padding: 10px;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+.campaign-index {
+  position: absolute;
+  bottom: 40px;
+  left: 7vw;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+.campaign-wide .campaign-visual {
+  grid-column: 1/-1;
+}
+.campaign-wide .campaign-copy {
+  background: #fcfbf8ed;
+  margin: 40px;
+  padding: 40px;
+  max-width: 600px;
+}
+.campaign-wide .campaign-secondary {
+  display: none;
+}
+.merch-section {
+  padding-block: 110px 60px;
+}
+.merch-section .section-top {
+  align-items: end;
+  margin-bottom: 35px;
+}
+.merch-section .campaign-copy {
+  padding: 0;
+  width: 100%;
+}
+.merch-section h2 {
+  font-size: clamp(38px, 5vw, 72px);
+  font-weight: 600;
+  max-width: 800px;
+  letter-spacing: -0.06em;
+}
+.merch-section .campaign-copy .button {
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-bottom: 1px solid;
+  padding: 8px 0;
+  min-width: 140px;
+  border-radius: 0;
+}
+.fashion .product-grid {
+  gap: 40px 24px;
+}
+.fashion .product-photo {
+  background: #edf0f2;
+  aspect-ratio: 3/4;
+}
+.fashion .product-card {
+  border: 0;
+  background: none;
+}
+.fashion .product-card h3 {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+.fashion .product-card .price {
+  color: #34516a;
+}
+.product-photo img {
+  transition:
+    transform 0.5s ease,
+    opacity 0.35s ease;
+}
+.product-photo:hover img:first-child {
+  transform: scale(1.035);
+}
+.product-badges {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.product-photo > .product-badges {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 2;
+  pointer-events: none;
+}
+.merch-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  padding: 6px 9px;
+  line-height: 1.4;
+  background: #fcfbf8;
+  color: #102b50;
+}
+.badge-accent {
+  background: #d6eef0;
+  color: #084b56;
+}
+.badge-sale,
+.badge-urgent {
+  background: #8d3044;
+  color: white;
+}
+.badge-premium {
+  background: #102b50;
+  color: #f4df9b;
+}
+.badge-neutral {
+  background: #fcfbf8;
+  color: #102b50;
+}
+.product-info > .product-badges {
+  margin-block: 18px;
+}
+.editorial-story {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  margin-block: 80px 0;
+  background: #0c304c;
+  color: #fff;
+}
+.story-image img {
+  width: 100%;
+  height: 100%;
+  max-height: 760px;
+  object-fit: cover;
+  object-position: center 20%;
+}
+.editorial-story h2 {
+  font-size: clamp(44px, 5.5vw, 88px);
+  font-weight: 600;
+  letter-spacing: -0.065em;
+}
+.editorial-story .eyebrow {
+  color: #bde2e6;
+}
+.editorial-story .button {
+  background: #f4e2ad;
+  color: #102b50;
+  border-color: #f4e2ad;
+}
+.story-wide {
+  grid-template-columns: 1fr;
+}
+.story-wide .story-image img {
+  max-height: 500px;
+}
+.promotional-banner {
+  margin-inline: 6%;
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 30px;
+}
+.collection-tile img {
+  aspect-ratio: 4/5;
+  width: 100%;
+  object-fit: cover;
+  margin-bottom: 18px;
+}
+.collection-tile h3 {
+  font-size: 30px;
+}
+.collection-tile:nth-child(2) {
+  padding-top: 65px;
+}
+.product-spotlight {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  padding-block: 80px;
+  gap: 6vw;
+}
+.product-spotlight h2 {
+  font-size: clamp(40px, 6vw, 86px);
+}
+.fashion .listing h1 {
+  font-size: clamp(48px, 7vw, 96px);
+  font-weight: 600;
+  letter-spacing: -0.06em;
+}
+.listing-campaign img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  margin-bottom: 36px;
+}
+.filters {
+  border: 0;
+  border-block: 1px solid var(--line);
+  padding: 24px 0;
+  background: none;
+  gap: 18px;
+}
+.filter-toggle {
+  display: none;
+}
+.filters input,
+.filters select {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #9eabbc;
+  border-radius: 0;
+  padding-inline-start: 0;
+}
+.fashion .product-info h1 {
+  font-size: clamp(38px, 4.5vw, 66px);
+  font-weight: 500;
+}
+.fashion .product-info .price {
+  font-size: 23px;
+}
+.variant-options {
+  border: 0;
+  padding: 0;
+  margin-block: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.variant-options legend {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.variant-choice {
+  position: relative;
+  display: block;
+  margin: 0;
+}
+.variant-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.variant-choice span {
+  display: block;
+  border: 1px solid #a3adba;
+  padding: 13px 17px;
+  min-width: 54px;
+  text-align: center;
+  font-size: 13px;
+}
+.variant-choice input:checked + span {
+  background: #102b50;
+  color: white;
+  border-color: #102b50;
+}
+.variant-choice input:focus-visible + span {
+  outline: 3px solid #157f8d;
+  outline-offset: 3px;
+}
+.variant-choice input:disabled + span {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.quantity-stepper {
+  display: flex;
+  border: 1px solid #a3adba;
+  width: 160px;
+  margin-block: 8px 20px;
+}
+.quantity-stepper button {
+  border: 0;
+  background: none;
+  width: 48px;
+  font-size: 22px;
+  color: var(--ink);
+}
+.quantity-stepper input {
+  border: 0;
+  width: 64px;
+  text-align: center;
+  padding: 10px 0;
+  -moz-appearance: textfield;
+}
+.quantity-stepper input::-webkit-inner-spin-button {
+  appearance: none;
+}
+.fashion #add-to-bag > .button {
+  min-height: 60px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.fashion .product-gallery {
+  gap: 16px;
+}
+.fashion .notice {
+  background: #edf2f5;
+  border: 0;
+  border-inline-start: 2px solid #a7bccb;
+  font-size: 12px;
+  padding: 14px 16px;
+}
+.admin-body {
+  background: #f3f5fa;
+  color: #172b49;
+}
+.admin-top {
+  background: #fff;
+  border-color: #dbe1ec;
+}
+.admin-sidebar {
+  background: #102b50;
+  color: #dce6f8;
+  border: 0;
+}
+.admin-sidebar nav a {
+  border-radius: 5px;
+  margin-block: 3px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.admin-sidebar nav a[aria-current],
+.admin-sidebar nav a:hover {
+  background: #294c78;
+  color: white;
+}
+.admin-sidebar .eyebrow {
+  color: #afc4e1;
+}
+.admin-main h1 {
+  font-family: Arial, sans-serif;
+  font-size: 36px;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+.admin-main h2 {
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.admin-main .panel {
+  background: white;
+  border: 1px solid #e0e5ef;
+  border-radius: 8px;
+  box-shadow: none;
+  padding: 28px;
+}
+.admin-main input,
+.admin-main select,
+.admin-main textarea,
+.auth-page input {
+  border: 1px solid #b9c5d5;
+  border-radius: 5px;
+  background: #fff;
+  padding: 11px 12px;
+}
+.admin-main input:focus,
+.admin-main select:focus,
+.admin-main textarea:focus {
+  outline: 2px solid #5364ba;
+  outline-offset: 1px;
+}
+.admin-main input[type="checkbox"] {
+  accent-color: #294f88;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.admin-main th {
+  background: #edf1f8;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.admin-main td {
+  border-color: #e2e7f0;
+}
+.admin-main td small {
+  display: block;
+  font-size: 11px;
+  color: #52637a;
+}
+.commerce-editor summary {
+  font-size: 19px;
+}
+.commerce-editor summary small {
+  font-size: 12px;
+  font-weight: 400;
+  color: #52637a;
+}
+.commerce-editor form {
+  padding-block: 24px;
+}
+.collection-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.order-history {
+  padding-inline-start: 20px;
+}
+.order-history li {
+  margin-block: 20px;
+}
+.order-history small {
+  display: block;
+  color: #52637a;
+}
+@media (max-width: 900px) {
+  .campaign {
+    min-height: 620px;
+  }
+  .campaign-copy {
+    padding: 40px;
+  }
+  .campaign-copy h1 {
+    font-size: 72px;
+  }
+  .campaign > .campaign-copy {
+    padding: 40px 32px 150px;
+  }
+  .collection-grid {
+    gap: 20px;
+  }
+  .fashion .product-grid {
+    gap: 30px 16px;
+  }
+  .editorial-story .campaign-copy {
+    padding: 36px;
+  }
+  .admin-main .panel {
+    padding: 20px;
+  }
+}
+@media (max-width: 760px) {
+  .site-header {
+    gap: 12px;
+    padding: 12px 20px;
+    min-height: 110px;
+  }
+  .brand-signature img {
+    width: 85px;
+    height: 88px;
+  }
+  .fashion .site-header {
+    min-height: 150px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .fashion .brand-signature img {
+    width: 120px;
+    height: 105px;
+  }
+  .fashion .site-header nav {
+    grid-column: 1/-1;
+    grid-row: 2;
+    justify-content: space-between;
+    border-top: 1px solid #d5dde4;
+    padding-top: 12px;
+    width: 100%;
+  }
+  .fashion .header-tools {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    gap: 12px;
+  }
+  .fashion .site-header nav a {
+    font-size: 10px;
+  }
+  .holdings-intro {
+    padding-block: 60px 42px;
+  }
+  .holdings-intro h1 {
+    font-size: 54px;
+  }
+  .holdings-orbit {
+    opacity: 0.5;
+    right: -360px;
+  }
+  .division-feature {
+    grid-template-columns: 1fr;
+  }
+  .division-feature .division-image {
+    max-height: 420px;
+  }
+  .division-copy {
+    padding: 36px 24px;
+  }
+  .divisions {
+    padding-block: 35px 50px;
+  }
+  .division-row {
+    padding-block: 24px;
+  }
+  .campaign {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-bottom: 0;
+  }
+  .campaign > .campaign-copy {
+    order: 0;
+    padding: 36px 24px 34px;
+  }
+  .campaign-copy h1 {
+    font-size: clamp(57px, 14.6vw, 90px);
+    max-width: 520px;
+    margin-block: 18px;
+  }
+  .campaign-copy p {
+    font-size: 14px;
+    max-width: 300px;
+  }
+  .campaign-visual {
+    order: 1;
+  }
+  .campaign-visual img {
+    height: 500px;
+    object-position: center 25%;
+  }
+  .campaign-secondary {
+    display: none;
+  }
+  .campaign-index {
+    bottom: 20px;
+    left: 24px;
+    color: #fff;
+    background: #102b50;
+    padding: 8px 12px;
+  }
+  .campaign-wide .campaign-copy {
+    margin: 0;
+  }
+  .merch-section {
+    padding-block: 54px 24px;
+  }
+  .merch-section h2 {
+    font-size: 40px;
+  }
+  .merch-section .section-top {
+    margin-bottom: 24px;
+  }
+  .fashion .product-grid {
+    gap: 28px 12px;
+  }
+  .fashion .product-card h3 {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .fashion .product-card .price {
+    font-size: 13px;
+  }
+  .product-photo > .product-badges {
+    left: 7px;
+    right: 7px;
+    top: 7px;
+  }
+  .merch-badge {
+    font-size: 8px;
+    padding: 5px 6px;
+    letter-spacing: 0.04em;
+  }
+  .editorial-story {
+    grid-template-columns: 1fr;
+    margin-top: 40px;
+  }
+  .story-image img {
+    max-height: 520px;
+  }
+  .editorial-story .campaign-copy {
+    padding: 38px 24px;
+  }
+  .editorial-story h2 {
+    font-size: 52px;
+  }
+  .collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+  }
+  .collection-tile:nth-child(2) {
+    padding-top: 32px;
+  }
+  .collection-tile h3 {
+    font-size: 22px;
+  }
+  .collection-tile p {
+    font-size: 12px;
+  }
+  .product-spotlight {
+    grid-template-columns: 1fr;
+    padding-block: 40px;
+  }
+  .product-spotlight .campaign-copy {
+    padding: 0;
+  }
+  .product-spotlight h2 {
+    font-size: 48px;
+  }
+  .filter-toggle {
+    display: flex;
+    margin-block: 20px;
+  }
+  .filters {
+    display: none;
+  }
+  .filters.is-open {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 24px 0;
+  }
+  .filters label:first-child {
+    grid-column: 1/-1;
+  }
+  .fashion .product-page {
+    padding-top: 24px;
+  }
+  .fashion .product-info h1 {
+    font-size: 42px;
+  }
+  .product-gallery {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+  .product-gallery > a {
+    flex: 0 0 88%;
+    scroll-snap-align: start;
+  }
+  .product-gallery img {
+    width: 100%;
+    max-height: 540px;
+    object-fit: cover;
+  }
+  .admin-main h1 {
+    font-size: 29px;
+  }
+  .admin-main .panel {
+    padding: 18px;
+  }
+  .permission-groups {
+    gap: 10px;
+  }
+  .fashion .site-footer {
+    margin-top: 50px;
+  }
+}
+[dir="rtl"] .campaign-secondary {
+  left: auto;
+  right: 34%;
+}
+[dir="rtl"] .campaign-index {
+  left: auto;
+  right: 7vw;
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-photo img {
+    transition: none;
+  }
+  .product-photo:hover img:first-child {
+    transform: none;
+  }
+}
+.variant-options {
+  min-width: 0;
+  max-width: 100%;
+}
+.variant-choice {
+  min-width: 0;
+  max-width: 100%;
+}
+.variant-choice span {
+  overflow-wrap: anywhere;
+}
+.product-info,
+.product-gallery {
+  min-width: 0;
+}
+.fashion #add-to-bag > .button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.campaign {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+}
+.campaign > .campaign-copy {
+  padding-inline: 6vw 3vw;
+  min-width: 0;
+}
+.campaign-copy h1 {
+  font-size: clamp(54px, 6.4vw, 96px);
+  overflow-wrap: normal;
+}
+.campaign-secondary {
+  width: 16%;
+  left: 40%;
+  bottom: -42px;
+}
+.campaign-secondary img {
+  height: auto;
+  aspect-ratio: 4/5;
+}
+.fashion #add-to-bag {
+  display: block;
+}
+.variant-choice:only-of-type {
+  max-width: 100%;
+}
+.variant-choice:only-of-type span {
+  min-width: 150px;
+}
+.fashion .product-info .variant-options {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+.fashion .product-info .variant-options legend {
+  max-width: 100%;
+  white-space: normal;
+}
+[dir="rtl"] .campaign-secondary {
+  left: auto;
+  right: 40%;
+}
+@media (max-width: 760px) {
+  .campaign > .campaign-copy {
+    padding: 36px 24px;
+  }
+  .campaign-copy h1 {
+    font-size: clamp(52px, 13vw, 84px);
+  }
+  .variant-choice:only-of-type {
+    width: 100%;
+  }
+  .variant-choice:only-of-type span {
+    min-width: 0;
+  }
+  .fashion .product-info .variant-options legend {
+    font-size: 13px;
+  }
+}
+.admin-sidebar nav a {
+  color: #dce6f8;
+}
+.color-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #aaa;
+  margin-inline-end: 8px;
+  vertical-align: middle;
+  background: transparent;
+}
+.color-dot[data-color="black"] {
+  background: #161616;
+}
+.color-dot[data-color="white"] {
+  background: #fff;
+}
+.color-dot[data-color="pink"] {
+  background: #e4a6c0;
+}
+.color-dot[data-color="blue"] {
+  background: #6aa5dd;
+}
+.color-dot[data-color="navy"] {
+  background: #102b50;
+}
+.color-dot[data-color="red"] {
+  background: #ba3c4c;
+}
+.color-dot[data-color="green"] {
+  background: #43836b;
+}
+.color-dot[data-color="gray"],
+.color-dot[data-color="grey"] {
+  background: #969ba3;
+}
+.filter-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 90vh;
+  border: 0;
+  border-radius: 14px 14px 0 0;
+  padding: 24px;
+  background: #fcfbf8;
+  color: #102b50;
+}
+.filter-sheet::backdrop {
+  background: #102b5077;
+}
+.filter-sheet > .text-button {
+  display: block;
+  margin-inline-start: auto;
+}
+.filter-sheet .filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  border: 0;
+}
+.filter-sheet .filters input,
+.filter-sheet .filters select {
+  border: 1px solid #a5b3c6;
+  padding: 12px;
+}
+.admin-main th {
+  color: #40516a;
+}

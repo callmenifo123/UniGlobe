@@ -2,7 +2,7 @@ import type { Env } from "./model";
 import { money, record } from "./model";
 import { sendReceipt } from "./email";
 export function orderMessage(o: any) {
-  return `UniGlobe Fashion · UGF-${o.id}\n${o.created_at} UTC\n${o.customer.name}\nPhone: ${o.customer.phone}\nWhatsApp: ${o.customer.whatsapp || "—"}\nEmail: ${o.customer.email || "—"}\n${o.customer.address}, ${o.customer.city}, ${o.customer.region} ${o.customer.postalCode}, ${o.customer.country}\n\n${o.items.map((i: any) => `${i.name} ${i.variant} × ${i.quantity} — ${money(i.price * i.quantity)}`).join("\n")}\n\nTotal: ${money(o.total)}\nNotes: ${o.customer.notes || "—"}\nYour order has already been received.`;
+  return `UniGlobe Fashion · UGF-${o.id}\n${o.created_at} UTC\n${o.customer.name}\nPhone: ${o.customer.phone}\nWhatsApp: ${o.customer.whatsapp || "—"}\nEmail: ${o.customer.email || "—"}\n${o.customer.address}, ${o.customer.city}, ${o.customer.region} ${o.customer.postalCode}, ${o.customer.country}\n\n${o.items.map((i: any) => `${i.name} ${i.variant} × ${i.quantity} — ${money(i.price * i.quantity, "en", o.currency)}`).join("\n")}\n\nDelivery: ${o.delivery_rule ? money(o.delivery_fee, "en", o.currency) : "To be confirmed"}\nTotal: ${money(o.total, "en", o.currency)}\nNotes: ${o.customer.notes || "—"}\nYour order has already been received.`;
 }
 
 // Keep UTF-16 length under Telegram's limit without splitting a surrogate pair.

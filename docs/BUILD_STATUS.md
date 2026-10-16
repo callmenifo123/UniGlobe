@@ -1,14 +1,29 @@
 # Build status
 
-## Refinement pass — in progress, 2026-10-15
+## Refinement pass — 2026-10-16
 
-The prior V1 is not the final design or feature scope. The complete new requirements are preserved in `REFINEMENT_SPEC.md`.
+The complete requested scope is preserved in `REFINEMENT_SPEC.md`. This pass substantially revises the prior V1.
 
-First stable checkpoint: protected singleton ownership with atomic transfer; temporary-password onboarding; password replacement before dashboard access; QR/manual TOTP enrollment; per-account required/optional/disabled TOTP; owner-enforced global TOTP; one-use recovery codes; grouped permissions with broad operational defaults; admin profile, suspension, reset and deletion controls; attributed security auditing. Owner protections remain server-side and database-enforced. Existing account permissions are retained rather than silently expanded.
+### Implemented
 
-Validation: 61 runtime tests and 13 browser journeys pass, including a complete new-admin password/QR/recovery-code journey. Typecheck and Worker build pass. Migration 0011 adds identity state without resetting existing accounts. Production rollout of this checkpoint is pending below; authenticated live QA remains dependent on production Owner enrollment.
+- Protected Owner and separate admin accounts; broad operational defaults; grouped individual permissions; temporary-password onboarding; mandatory permanent-password replacement; QR/manual TOTP enrollment and one-use recovery codes; optional/required/disabled per-account TOTP and Owner global policy; account suspension/reset/deletion and attributed audits. The protected ownership model from checkpoint `4f09f48` is unchanged.
+- Fashion now leads with a prominent Fashion logo, navy/teal/gold identity, large campaign imagery, asymmetrical editorial composition, curated sections, product badges, selectable variants/color indicators, quantity controls and an accessible mobile filter sheet. Holdings uses its blue-violet identity and leads with all three divisions. Admin forms, tables/navigation and contrast have been refined.
+- Unlimited custom category/collection records with translated content/SEO, images, visibility/archive, safe deletion, ordering, landing URLs and multiple product memberships. Twelve configurable Fashion section types; selected products/collections; homepage promotion; scheduled custom badges and safe preset styles.
+- Variant SKU/stock/price overrides, currency configuration, region/country delivery rules and thresholds, persisted delivery/price snapshots, order sorting/history, customer-data permissions, notification configuration and granular inventory/deletion/cancellation/archive permissions. No real fees or business facts were invented.
+- Dedicated translation-only workflows for products, taxonomies, badges and sections; English/Arabic/Sinhala/Tamil and Arabic RTL. Configurable support and country-specific contacts.
 
-Remaining in this refinement pass: full taxonomy and collections, curated homepage merchandising, badges, granular catalog/order enforcement, delivery rules, Fashion/Holdings redesign, polished retail controls, final mobile/localization and live persistence QA. No claim is made that the new specification is finished.
+### Verification and current rollout
+
+- Latest stable deployed identity checkpoint: commit `4f09f48`, Worker `f4dd34f4-19dc-442a-9882-b418e57e3840`, migration 0011 applied. Public/admin bootstrap QR/Mail checks passed.
+- Refinement validation: 69 runtime tests, 14 browser journeys, typecheck and Worker build. Browser QA covers new collection/badge/section CRUD and resulting storefront output, temporary-password/QR onboarding, checkout/order persistence, media, mobile and four languages. Expanded WCAG A/AA checks cover 23 routes. Desktop/mobile screenshots reviewed; visual overlap and Tamil narrow-screen controls corrected.
+- Migration 0012 and the catalog/design checkpoint are awaiting the final stable rollout recorded below. Original supplied images remain unchanged. No new paid service or Mail changes are authorized.
+- Owner explicitly chose self-enrollment on 2026-10-16. **Do not create a temporary production Owner or change the ownership model.** Production has no Owner yet; authenticated production CRUD, account/permission/TOTP workflows and controlled live orders are deferred until enrollment. Local tests are not claimed as authenticated production verification.
+
+### Remaining owner-dependent work
+
+1. Enroll the real Owner, save recovery codes, securely back up AUTH_KEY, then remove BOOTSTRAP_TOKEN. Perform authenticated production QA using that account.
+2. Review actual product facts, prices/currency, variants/stock, delivery fees/coverage, contacts/socials, terms/privacy and business translations before opening orders.
+3. Supply verified email sender/recipients, Telegram bot/chat settings and WhatsApp number; verify account sending capability and controlled live deliveries. Optional free Turnstile keys may be added.
 
 ## Prior deployment milestone — 2026-10-15
 

@@ -61,12 +61,24 @@
     for (const [k, v] of new FormData(f)) {
       if (k.includes(".")) {
         const [parent, child] = k.split(".");
-        if (["variant", "social"].includes(parent)) continue;
+        if (["variant", "social", "badge"].includes(parent)) continue;
         (d[parent] ??= {})[child] = v;
       } else d[k] = v;
     }
     f.querySelectorAll("input[type=checkbox]").forEach((el) => {
-      if (!["countries", "permissions", "variant.available"].includes(el.name))
+      if (
+        ![
+          "countries",
+          "permissions",
+          "collections",
+          "products",
+          "taxonomies",
+          "variant.available",
+          "badge.enabled",
+          "badge.card",
+          "badge.page",
+        ].includes(el.name)
+      )
         d[el.name] = el.checked;
     });
     if ("version" in d) d.version = Number(d.version);
@@ -108,7 +120,29 @@
           d.price = Math.round(Number(d.price) * 100);
           d.salePrice =
             d.salePrice === "" ? null : Math.round(Number(d.salePrice) * 100);
-          d.currency = "LKR";
+          d.currency ||= "LKR";
+          d.collections = new FormData(f).getAll("collections");
+          d.badges = [...f.querySelectorAll(".badge-row")]
+            .map((row) => ({
+              id: row.dataset.badgeId,
+              enabled: row.querySelector('[name="badge.enabled"]').checked,
+              card: row.querySelector('[name="badge.card"]').checked,
+              page: row.querySelector('[name="badge.page"]').checked,
+              priority: Number(
+                row.querySelector('[name="badge.priority"]').value,
+              ),
+              start: row.querySelector('[name="badge.start"]').value
+                ? new Date(
+                    row.querySelector('[name="badge.start"]').value + "Z",
+                  ).toISOString()
+                : "",
+              end: row.querySelector('[name="badge.end"]').value
+                ? new Date(
+                    row.querySelector('[name="badge.end"]').value + "Z",
+                  ).toISOString()
+                : "",
+            }))
+            .filter((b) => b.enabled);
           d.countries = new FormData(f).getAll("countries");
           d.images = new FormData(f).getAll("images").filter(Boolean);
           d.variants = [...f.querySelectorAll(".variant-row")].map((row) => ({
@@ -120,6 +154,12 @@
               row.querySelector('[name="variant.stock"]').value === ""
                 ? null
                 : Number(row.querySelector('[name="variant.stock"]').value),
+            price: row.querySelector('[name="variant.price"]')?.value
+              ? Math.round(
+                  Number(row.querySelector('[name="variant.price"]').value) *
+                    100,
+                )
+              : null,
             available: row.querySelector('[name="variant.available"]').checked,
           }));
         }
@@ -136,6 +176,24 @@
               .filter(Boolean);
           d.countries = new FormData(f).getAll("countries");
         }
+        if (f.hasAttribute("data-translation-form")) {
+          const { version, ...fields } = d;
+          d = { version, fields };
+        }
+        if (f.dataset.commerce) {
+          if (d.slug === "") delete d.slug;
+          if ("homepagePriority" in d)
+            d.homepagePriority = Number(d.homepagePriority);
+          if (f.dataset.commerce === "sections") {
+            d.products = new FormData(f).getAll("products");
+            d.taxonomies = new FormData(f).getAll("taxonomies");
+          }
+          if (f.dataset.commerce === "delivery") {
+            d.fee = Math.round(Number(d.fee) * 100);
+            d.freeAbove =
+              d.freeAbove === "" ? null : Math.round(Number(d.freeAbove) * 100);
+          }
+        }
         const result = await request(f.dataset.api, f.dataset.method, d);
         await showCredentials(result);
         if (result.version && f.elements.version)
@@ -149,6 +207,20 @@
       } finally {
         if (button) button.disabled = false;
       }
+    }),
+  );
+  document.querySelectorAll("[data-badge-preset]").forEach((el) =>
+    el.addEventListener("change", () => {
+      if (!el.value) return;
+      const f = el.closest("form");
+      f.elements["name.en"].value = el.value;
+      f.elements.style.value =
+        {
+          Sale: "sale",
+          "Limited discount": "sale",
+          "Limited quantity": "urgent",
+          Exclusive: "premium",
+        }[el.value] || "accent";
     }),
   );
   document.addEventListener("click", async (e) => {
@@ -168,7 +240,7 @@
       const id = "variant-" + crypto.randomUUID().slice(0, 8);
       $("#variant-fields").insertAdjacentHTML(
         "beforeend",
-        `<fieldset class="variant-row"><legend>Variant</legend><label>Stable ID<input name="variant.id" value="${id}" required></label><label>Size<input name="variant.size"></label><label>Color<input name="variant.color"></label><label>SKU<input name="variant.sku"></label><label>Stock<input type="number" min="0" name="variant.stock"></label><label class="check"><input type="checkbox" name="variant.available" checked>Available</label><button type="button" class="text-button" data-remove-row>Remove variant</button></fieldset>`,
+        `<fieldset class="variant-row"><legend>Variant</legend><label>Stable ID<input name="variant.id" value="${id}" required></label><label>Size<input name="variant.size"></label><label>Color<input name="variant.color"></label><label>SKU<input name="variant.sku"></label><label>Stock<input type="number" min="0" name="variant.stock"></label><label>Price override<input type="number" min="0.01" step="0.01" name="variant.price"></label><label class="check"><input type="checkbox" name="variant.available" checked>Available</label><button type="button" class="text-button" data-remove-row>Remove variant</button></fieldset>`,
       );
       return;
     }
@@ -248,7 +320,7 @@
     }
   });
   const imageInputs =
-    'input[name="images"], input[name="image"], input[name="logo"], input[name="holdingsLogo"], input[name="fashionLogo"], input[name="favicon"], input[name="heroImage"]';
+    'input[name="images"], input[name="image"], input[name="logo"], input[name="holdingsLogo"], input[name="fashionLogo"], input[name="favicon"], input[name="heroImage"], input[name="cover"], input[name="hero"], input[name="secondaryImage"]';
   function addImagePickers() {
     document.querySelectorAll(imageInputs).forEach((input) => {
       if (input.dataset.pickerReady) return;

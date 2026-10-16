@@ -1,3 +1,12 @@
+import {
+  taxonomySchema,
+  badgeSchema,
+  sectionSchema,
+  deliverySchema,
+  entries,
+  member,
+} from "./commerce";
+import { commercePage } from "./commerce-ui";
 import { identity, identityUsers, identitySecurity } from "./identity";
 import { Hono } from "hono";
 import { emailConfigured } from "./email";
@@ -33,6 +42,7 @@ import {
 } from "./security";
 import { shell, adminLayout, authPage, field } from "./ui";
 import {
+  localizedFields,
   productTable,
   productForm,
   recordForm,
@@ -100,9 +110,45 @@ admin.use("*", async (c, next) => {
   await next();
 });
 admin.route("/", identity);
+async function validateProductAccess(c: any, p: any, old?: any) {
+  if (!allow(c.get("user"), "inventory.manage")) {
+    const stocks = (v: any[]) =>
+      JSON.stringify(v.map((x) => [x.id, x.stock]).sort());
+    if (
+      old
+        ? stocks(p.variants) !== stocks(old.variants)
+        : p.variants.some((v: any) => v.stock !== null)
+    )
+      throw new HTTPException(403, {
+        message: "Inventory-management permission required",
+      });
+  }
+  if (
+    !allow(c.get("user"), "merchandising.manage") &&
+    JSON.stringify(p.badges) !== JSON.stringify(old?.badges || [])
+  )
+    throw new HTTPException(403, {
+      message: "Merchandising permission required",
+    });
+  for (const [kind, ids] of [
+    ["categories", [p.category].filter(Boolean)],
+    [
+      "collections",
+      [...new Set([p.collection, ...p.collections].filter(Boolean))],
+    ],
+    ["badges", p.badges.map((b: any) => b.id)],
+  ] as [string, string[]][]) {
+    const rows = await entries(c.env.DB, kind);
+    if (ids.some((id) => !rows.some((r) => r.id === id)))
+      throw new HTTPException(400, {
+        message: "Select existing " + kind + " before saving",
+      });
+  }
+}
 admin.post("/api/admin/products", required("products.write"), async (c) => {
   const p = productSchema.parse(await c.req.json());
   const id = crypto.randomUUID();
+  await validateProductAccess(c, p);
   await saveProduct(c.env, id, p, null);
   await audit(c.env.DB, c.get("user").id, "product.created", id);
   return c.json({ ok: true, redirect: "/admin/products/" + id });
@@ -161,6 +207,19 @@ async function saveProduct(
 admin.put("/api/admin/products/:id", required("products.write"), async (c) => {
   const d = await c.req.json();
   const p = productSchema.parse(d);
+  const old = (await products(c.env.DB, true)).find(
+    (p) => p.id === c.req.param("id"),
+  );
+  if (
+    !old ||
+    old.version !== d.version ||
+    old.inventoryRevision !== d.inventoryRevision
+  )
+    return c.json(
+      { error: "This product or its stock changed. Reload before saving." },
+      409,
+    );
+  await validateProductAccess(c, p, old);
   await saveProduct(
     c.env,
     c.req.param("id"),
@@ -168,6 +227,17 @@ admin.put("/api/admin/products/:id", required("products.write"), async (c) => {
     z.number().int().min(1).parse(d.version),
     z.number().int().min(1).parse(d.inventoryRevision),
   );
+  if (old.price !== p.price || old.salePrice !== p.salePrice)
+    await audit(
+      c.env.DB,
+      c.get("user").id,
+      "product.price_changed",
+      old.id,
+      JSON.stringify({
+        from: { price: old.price, salePrice: old.salePrice },
+        to: { price: p.price, salePrice: p.salePrice },
+      }),
+    );
   await audit(
     c.env.DB,
     c.get("user").id,
@@ -192,6 +262,7 @@ admin.post(
       name: { ...p.name, en: p.name.en + " (copy)" },
       visible: false,
     });
+    await validateProductAccess(c, copy);
     await saveProduct(c.env, id, copy, null);
     await audit(c.env.DB, c.get("user").id, "product.duplicated", id);
     return c.json({ ok: true, redirect: "/admin/products/" + id });
@@ -199,7 +270,7 @@ admin.post(
 );
 admin.delete(
   "/api/admin/products/:id",
-  required("products.write"),
+  required("products.delete"),
   async (c) => {
     const id = c.req.param("id");
     const used = await c.env.DB.prepare(
@@ -226,8 +297,11 @@ const recordPermission: Record<string, string> = {
   branding: "branding.write",
   contacts: "contacts.write",
   ordering: "settings.write",
-  categories: "products.write",
-  collections: "products.write",
+  categories: "categories.manage",
+  collections: "collections.manage",
+  badges: "merchandising.manage",
+  sections: "merchandising.manage",
+  delivery: "delivery.manage",
 };
 const safeLink = z
   .string()
@@ -271,6 +345,9 @@ const schemas: Record<string, z.ZodType> = {
   }),
   contacts: z.object({
     email: z.union([z.string().email(), z.literal("")]),
+    supportEmail: z.union([z.string().email(), z.literal("")]).default(""),
+    sriLankaContact: z.string().max(500).default(""),
+    saudiContact: z.string().max(500).default(""),
     phone: z.string().max(30),
     whatsapp: z
       .string()
@@ -283,6 +360,9 @@ const schemas: Record<string, z.ZodType> = {
       .max(20),
   }),
   ordering: z.object({
+    currency: z.enum(["LKR", "SAR", "USD"]).default("LKR"),
+    customerEmailEnabled: z.boolean().default(true),
+    checkoutIntro: localized.default(L("")),
     turnstileEnabled: z.boolean().default(false),
     enabled: z.boolean(),
     emailEnabled: z.boolean(),
@@ -332,22 +412,18 @@ const schemas: Record<string, z.ZodType> = {
           new Set(x).size === x.length,
       ),
   }),
-  categories: z.object({
-    name: localized,
-    description: localized,
-    priority: z.number().int(),
-  }),
-  collections: z.object({
-    name: localized,
-    description: localized,
-    priority: z.number().int(),
-  }),
+  categories: taxonomySchema,
+  collections: taxonomySchema,
+  badges: badgeSchema,
+  sections: sectionSchema,
+  delivery: deliverySchema,
 };
 admin.put("/api/admin/records/:kind/:id", async (c) => {
   const { kind } = c.req.param();
   if (
     !schemas[kind] ||
     (!allow(c.get("user"), recordPermission[kind]) &&
+      !(kind === "ordering" && allow(c.get("user"), "notifications.manage")) &&
       !(kind === "content" && allow(c.get("user"), "translations.write")))
   )
     return c.json({ error: "Permission denied" }, 403);
@@ -360,7 +436,17 @@ admin.put("/api/admin/records/:kind/:id", async (c) => {
           .parse(body.id)
       : c.req.param("id");
   const { version: submittedVersion, ...recordData } = body;
-  const data = schemas[kind].parse(recordData) as any;
+  const existing = await record(c.env.DB, kind, id);
+  const previous = existing
+    ? Object.fromEntries(
+        Object.entries(existing).filter(([k]) => k !== "version"),
+      )
+    : {};
+  const data = schemas[kind].parse(
+    kind === "content" && id === "fashion"
+      ? { ...previous, ...recordData }
+      : recordData,
+  ) as any;
   if (kind === "ordering") {
     if (
       data.turnstileEnabled &&
@@ -400,7 +486,66 @@ admin.put("/api/admin/records/:kind/:id", async (c) => {
         400,
       );
   }
-  const existing = await record(c.env.DB, kind, id);
+  if (["categories", "collections"].includes(kind)) {
+    data.slug ||= id;
+    if (
+      (await entries(c.env.DB, kind)).some(
+        (x) => x.id !== id && (x.slug || x.id) === data.slug,
+      )
+    )
+      return c.json({ error: "This URL slug is already used" }, 409);
+  }
+  if (
+    kind === "ordering" &&
+    existing &&
+    !allow(c.get("user"), "notifications.manage")
+  ) {
+    for (const key of [
+      "emailEnabled",
+      "emailRecipients",
+      "emailSender",
+      "customerEmailEnabled",
+      "telegramEnabled",
+      "telegramChats",
+      "emailSubject",
+      "emailTemplate",
+      "telegramTemplate",
+    ]) {
+      if (
+        JSON.stringify(data[key]) !==
+        JSON.stringify(
+          existing[key] ?? (key === "customerEmailEnabled" ? true : undefined),
+        )
+      )
+        return c.json(
+          { error: "Notification-management permission required" },
+          403,
+        );
+    }
+  }
+  if (
+    kind === "ordering" &&
+    existing &&
+    !allow(c.get("user"), "settings.write")
+  ) {
+    const notificationKeys = [
+      "emailEnabled",
+      "emailRecipients",
+      "emailSender",
+      "customerEmailEnabled",
+      "telegramEnabled",
+      "telegramChats",
+      "emailSubject",
+      "emailTemplate",
+      "telegramTemplate",
+    ];
+    for (const key of Object.keys(data))
+      if (
+        !notificationKeys.includes(key) &&
+        JSON.stringify(data[key]) !== JSON.stringify(existing[key])
+      )
+        return c.json({ error: "Store-settings permission required" }, 403);
+  }
   if (kind === "content" && !allow(c.get("user"), "content.write")) {
     if (!existing)
       return c.json({ error: "Translators cannot create pages" }, 403);
@@ -445,25 +590,41 @@ admin.put("/api/admin/records/:kind/:id", async (c) => {
   await audit(c.env.DB, c.get("user").id, kind + ".updated", id);
   return c.json({ ok: true, reload: true });
 });
-admin.delete(
-  "/api/admin/records/:kind/:id",
-  required("products.write"),
-  async (c) => {
-    const { kind, id } = c.req.param();
-    if (!["categories", "collections"].includes(kind)) return c.notFound();
-    const field = kind === "categories" ? "category" : "collection";
-    if ((await products(c.env.DB, true)).some((p) => (p as any)[field] === id))
-      return c.json(
-        { error: "This entry is used by products. Reassign them first." },
-        409,
-      );
-    await c.env.DB.prepare("DELETE FROM records WHERE kind=? AND id=?")
-      .bind(kind, id)
-      .run();
-    await audit(c.env.DB, c.get("user").id, kind + ".deleted", id);
-    return c.json({ ok: true });
-  },
-);
+admin.delete("/api/admin/records/:kind/:id", async (c) => {
+  const { kind, id } = c.req.param();
+  if (
+    !["categories", "collections", "badges", "sections", "delivery"].includes(
+      kind,
+    )
+  )
+    return c.notFound();
+  if (!allow(c.get("user"), recordPermission[kind]))
+    return c.json({ error: "Permission denied" }, 403);
+  const field = kind === "categories" ? "category" : "collection";
+  if (
+    (await products(c.env.DB, true)).some((p) =>
+      kind === "collections"
+        ? member(p, id)
+        : kind === "categories"
+          ? p.category === id
+          : kind === "badges"
+            ? p.badges.some((b) => b.id === id)
+            : false,
+    ) ||
+    (await entries(c.env.DB, "sections")).some(
+      (s) => s.collection === id || (s.taxonomies || []).includes(id),
+    )
+  )
+    return c.json(
+      { error: "This entry is used by products. Reassign them first." },
+      409,
+    );
+  await c.env.DB.prepare("DELETE FROM records WHERE kind=? AND id=?")
+    .bind(kind, id)
+    .run();
+  await audit(c.env.DB, c.get("user").id, kind + ".deleted", id);
+  return c.json({ ok: true });
+});
 admin.put("/api/admin/orders/:id", required("orders.write"), async (c) => {
   const d = z
     .object({
@@ -476,11 +637,29 @@ admin.put("/api/admin/orders/:id", required("orders.write"), async (c) => {
   const settings = await record(c.env.DB, "ordering");
   if (!settings.statuses.includes(d.status))
     return c.json({ error: "Unknown status" }, 400);
-  const result = await c.env.DB.prepare(
-    "UPDATE orders SET status=?,notes=?,archived=?,version=version+1 WHERE id=? AND version=?",
+  const old = await c.env.DB.prepare("SELECT * FROM orders WHERE id=?")
+    .bind(c.req.param("id"))
+    .first<any>();
+  if (!old) return c.notFound();
+  if (old.version !== d.version)
+    return c.json({ error: "This order changed. Reload before saving." }, 409);
+  if (
+    d.status !== old.status &&
+    d.status === "Cancelled" &&
+    !allow(c.get("user"), "orders.cancel")
   )
-    .bind(d.status, d.notes, d.archived ? 1 : 0, c.req.param("id"), d.version)
-    .run();
+    return c.json({ error: "Cancellation permission required" }, 403);
+  if (d.archived !== !!old.archived && !allow(c.get("user"), "orders.archive"))
+    return c.json({ error: "Archiving permission required" }, 403);
+  const results = await c.env.DB.batch([
+    c.env.DB.prepare(
+      "INSERT INTO order_history(order_id,actor,status,note) SELECT id,?,?,? FROM orders WHERE id=? AND version=?",
+    ).bind(c.get("user").id, d.status, d.notes, c.req.param("id"), d.version),
+    c.env.DB.prepare(
+      "UPDATE orders SET status=?,notes=?,archived=?,version=version+1 WHERE id=? AND version=?",
+    ).bind(d.status, d.notes, d.archived ? 1 : 0, c.req.param("id"), d.version),
+  ]);
+  const result = results[1];
   if (!result.meta.changes)
     return c.json(
       {
@@ -513,6 +692,77 @@ admin.post(
       c.req.param("id"),
     );
     return c.json({ ok: true });
+  },
+);
+admin.put(
+  "/api/admin/translations/:kind/:id",
+  required("translations.write"),
+  async (c) => {
+    const { kind, id } = c.req.param();
+    if (
+      ![
+        "products",
+        "categories",
+        "collections",
+        "sections",
+        "badges",
+        "content",
+      ].includes(kind)
+    )
+      return c.notFound();
+    const original =
+      kind === "products"
+        ? (await products(c.env.DB, true)).find((p) => p.id === id)
+        : await record(c.env.DB, kind, id);
+    if (!original) return c.notFound();
+    const d = z
+      .object({
+        version: z.number().int().min(1),
+        fields: z.record(z.string(), localized),
+      })
+      .parse(await c.req.json());
+    for (const key of Object.keys(d.fields))
+      if (
+        !original[key] ||
+        typeof original[key] !== "object" ||
+        !("en" in original[key])
+      )
+        return c.json(
+          { error: "Only existing translated text can be changed" },
+          403,
+        );
+    if (
+      ["products", "categories", "collections", "sections", "badges"].includes(
+        kind,
+      )
+    )
+      for (const key of ["name", "title"])
+        if (d.fields[key] && !d.fields[key].en.trim())
+          return c.json(
+            { error: "Keep an English fallback name or title" },
+            400,
+          );
+    const stmt =
+      kind === "products"
+        ? c.env.DB.prepare(
+            "UPDATE products SET data=json_patch(data,?),version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?",
+          ).bind(JSON.stringify(d.fields), id, d.version)
+        : c.env.DB.prepare(
+            "UPDATE records SET data=json_patch(data,?),version=version+1 WHERE kind=? AND id=? AND version=?",
+          ).bind(JSON.stringify(d.fields), kind, id, d.version);
+    const result = await stmt.run();
+    if (!result.meta.changes)
+      return c.json(
+        { error: "This content changed. Reload before saving." },
+        409,
+      );
+    await audit(
+      c.env.DB,
+      c.get("user").id,
+      "translations.updated",
+      kind + ":" + id,
+    );
+    return c.json({ ok: true, reload: true });
   },
 );
 admin.get("/api/admin/media", async (c) => {
@@ -618,8 +868,11 @@ admin.get("/admin/:section?/:id?", async (c) => {
   let body: any;
   const per: Record<string, string> = {
     products: "products.read",
-    categories: "products.read",
-    collections: "products.read",
+    categories: "categories.manage",
+    collections: "collections.manage",
+    badges: "merchandising.manage",
+    sections: "merchandising.manage",
+    delivery: "delivery.manage",
     orders: "orders.read",
     content: "content.write",
     translations: "translations.write",
@@ -630,7 +883,11 @@ admin.get("/admin/:section?/:id?", async (c) => {
 
     audit: "audit.read",
   };
-  if (per[section] && !allow(user, per[section]))
+  if (
+    per[section] &&
+    !allow(user, per[section]) &&
+    !(section === "ordering" && allow(user, "notifications.manage"))
+  )
     return c.html(
       shell(
         "Access denied",
@@ -650,12 +907,21 @@ admin.get("/admin/:section?/:id?", async (c) => {
         return c.text("Permission denied", 403);
       const p = id === "new" ? {} : list.find((p) => p.id === id);
       if (!p) return c.notFound();
-      body = productForm(p, await taxonomy(c.env.DB));
+      body = productForm(p, [
+        ...(await taxonomy(c.env.DB)),
+        ...(await entries(c.env.DB, "badges")),
+      ]);
     } else body = productTable(list);
-  } else if (["categories", "collections"].includes(section))
-    body = taxonomyPage(
+  } else if (
+    ["categories", "collections", "badges", "sections", "delivery"].includes(
       section,
-      (await taxonomy(c.env.DB)).filter((x) => x.kind === section),
+    )
+  )
+    body = commercePage(
+      section,
+      await entries(c.env.DB, section),
+      await products(c.env.DB, true),
+      await taxonomy(c.env.DB),
     );
   else if (["branding", "contacts", "ordering"].includes(section))
     body = recordForm(section, "main", await record(c.env.DB, section));
@@ -668,12 +934,26 @@ admin.get("/admin/:section?/:id?", async (c) => {
       const rows = await c.env.DB.prepare(
         "SELECT id,data FROM records WHERE kind='content'",
       ).all<any>();
+      const translatedEntities =
+        section === "translations"
+          ? [
+              ...(await products(c.env.DB, true)).map((p) => ({
+                ...p,
+                kind: "products",
+              })),
+              ...(await entries(c.env.DB, "categories")),
+              ...(await entries(c.env.DB, "collections")),
+              ...(await entries(c.env.DB, "sections")),
+              ...(await entries(c.env.DB, "badges")),
+            ]
+          : [];
       body = html`<div class="admin-heading"><h1>Pages & translations</h1></div>
         <div class="panel">
           <p>
             Edit page copy, images, SEO and all four language versions. Blank
             translations fall back to English.
           </p>
+          ${translatedEntities.map((r: any) => html`<a class="content-link" href="/admin/translations/${r.id}?kind=${r.kind}"><strong>${r.kind}</strong><span>${r.name?.en || r.title?.en || r.id} ↗</span></a>`)}
           ${rows.results.map((r) => html`<a class="content-link" href="/admin/${section}/${r.id}"><strong>${r.id}</strong><span>${JSON.parse(r.data).title.en} ↗</span></a>`)}
         </div>`;
     }
@@ -687,15 +967,36 @@ admin.get("/admin/:section?/:id?", async (c) => {
       body = orderPage(
         {
           ...row,
-          customer: JSON.parse(row.customer),
+          customer: allow(user, "customers.read")
+            ? JSON.parse(row.customer)
+            : {
+                name: "Restricted",
+                phone: "",
+                email: "",
+                address: "",
+                city: "",
+                country: "",
+                notes: "",
+              },
           items: JSON.parse(row.items),
         },
         (
           await c.env.DB.prepare("SELECT * FROM outbox WHERE order_id=?")
             .bind(id)
             .all()
-        ).results,
+        ).results.map((r: any) =>
+          allow(user, "customers.read")
+            ? r
+            : { ...r, destination: "Restricted" },
+        ),
         settings.statuses,
+        (
+          await c.env.DB.prepare(
+            "SELECT h.*,a.username FROM order_history h LEFT JOIN admins a ON a.id=h.actor WHERE order_id=? ORDER BY h.id DESC",
+          )
+            .bind(id)
+            .all()
+        ).results,
       );
     } else {
       const q = c.req.query();
@@ -703,8 +1004,17 @@ admin.get("/admin/:section?/:id?", async (c) => {
         1,
         Math.min(100000, Number.parseInt(q.page || "1") || 1),
       );
+      const sort =
+        (
+          {
+            newest: "id DESC",
+            oldest: "id ASC",
+            "total-high": "total DESC,id DESC",
+            "total-low": "total ASC,id DESC",
+          } as Record<string, string>
+        )[q.sort || "newest"] || "id DESC";
       const rows = await c.env.DB.prepare(
-        "SELECT * FROM orders WHERE archived=? AND (?='' OR status=?) AND (?='' OR customer LIKE ? OR CAST(id AS TEXT)=?) ORDER BY id DESC LIMIT 51 OFFSET ?",
+        `SELECT * FROM orders WHERE archived=? AND (?='' OR status=?) AND (?='' OR customer LIKE ? OR CAST(id AS TEXT)=?) ORDER BY ${sort} LIMIT 51 OFFSET ?`,
       )
         .bind(
           q.archived === "1" ? 1 : 0,
@@ -717,7 +1027,14 @@ admin.get("/admin/:section?/:id?", async (c) => {
         )
         .all();
       body = ordersPage(
-        rows.results.slice(0, 50),
+        rows.results.slice(0, 50).map((r: any) =>
+          allow(user, "customers.read")
+            ? r
+            : {
+                ...r,
+                customer: JSON.stringify({ name: "Restricted", phone: "" }),
+              },
+        ),
         { ...q, page, hasNext: rows.results.length > 50 },
         settings.statuses,
       );
@@ -768,12 +1085,19 @@ admin.get("/admin/:section?/:id?", async (c) => {
         ).all()
       ).results,
       user,
+      (
+        await c.env.DB.prepare(
+          "SELECT token_hash,admin_id,user_agent,expires_at FROM sessions WHERE expires_at>?",
+        )
+          .bind(Date.now())
+          .all()
+      ).results,
     );
   } else if (section === "security") {
     body = await identitySecurity(c);
   } else if (section === "audit") {
     const rows = await c.env.DB.prepare(
-      "SELECT * FROM audit ORDER BY id DESC LIMIT 200",
+      "SELECT audit.*,admins.username AS actor_name FROM audit LEFT JOIN admins ON admins.id=audit.actor ORDER BY audit.id DESC LIMIT 200",
     ).all<any>();
     body = html`<div class="admin-heading"><h1>Audit log</h1></div>
       <div class="panel table-scroll">
@@ -792,7 +1116,7 @@ admin.get("/admin/:section?/:id?", async (c) => {
               (r) =>
                 html`<tr>
                   <td>${r.created_at}</td>
-                  <td>${r.actor || "Unauthenticated"}</td>
+                  <td>${r.actor_name || r.actor || "Unauthenticated"}</td>
                   <td>${r.action}</td>
                   <td>${r.target}</td>
                   <td>${r.detail}</td>

@@ -1,5 +1,25 @@
 import type { Locale } from "./model";
 export const dictionary: Record<string, [string, string, string, string]> = {
+  "Filters & sort": [
+    "Filters & sort",
+    "التصفية والترتيب",
+    "පෙරහන් සහ අනුපිළිවෙළ",
+    "வடிகட்டி வரிசைப்படுத்து",
+  ],
+  "Decrease quantity": [
+    "Decrease quantity",
+    "تقليل الكمية",
+    "ප්‍රමාණය අඩු කරන්න",
+    "எண்ணிக்கையைக் குறை",
+  ],
+  "Increase quantity": [
+    "Increase quantity",
+    "زيادة الكمية",
+    "ප්‍රමාණය වැඩි කරන්න",
+    "எண்ணிக்கையை அதிகரி",
+  ],
+  Delivery: ["Delivery", "التوصيل", "බෙදාහැරීම", "விநியோகம்"],
+  Sale: ["Sale", "تخفيض", "වට්ටම්", "தள்ளுபடி"],
   home: ["Home", "الرئيسية", "මුල් පිටුව", "முகப்பு"],
   fashion: ["Fashion", "الأزياء", "විලාසිතා", "ஆடை"],
   shop: ["Shop", "تسوق", "වෙළඳසැල", "கடை"],

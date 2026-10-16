@@ -2,15 +2,23 @@
 
 ## Authentication and authorization
 
-Passwords are individually salted PBKDF2-SHA256 hashes at 100,000 iterations, the Web Crypto PBKDF2 iteration limit in the Workers runtime. Login is throttled per account and trusted Cloudflare client IP; authentication requires TOTP. TOTP secrets are AES-GCM encrypted with `AUTH_KEY`. Six-digit, SHA-1, 30-second TOTP codes support a ±1 step clock window; login codes cannot be replayed in that window.
+Passwords are individually salted PBKDF2-SHA256 hashes at 100,000 iterations, the Web Crypto PBKDF2 iteration limit in the Workers runtime. Login is throttled per account and trusted Cloudflare client IP; Owner authentication requires TOTP. Normal admins default to required TOTP; an account may be optional or disabled unless the Owner enables the global requirement. TOTP secrets are AES-GCM encrypted with `AUTH_KEY`. Six-digit, SHA-1, 30-second TOTP codes support a ±1 step clock window; login codes cannot be replayed in that window.
 
-Sessions use 256-bit random tokens; only SHA-256 digests are stored. Cookies are host-only, HttpOnly, SameSite=Strict, and Secure with the `__Host-` prefix over HTTPS. Sessions expire after eight hours. Login and credential changes rotate sessions; password/TOTP changes and permission changes revoke affected sessions. Administration is restricted to the configured admin hostname (localhost permitted for development). No parent-domain cookie is shared with Mail.
+Sessions use 256-bit random tokens; only SHA-256 digests are stored. Cookies are host-only, HttpOnly, SameSite=Strict, and Secure with the `__Host-` prefix over HTTPS. Sessions expire after eight hours. First-login onboarding sessions last twenty minutes and cannot access operational routes. Login and credential changes rotate sessions; password/TOTP changes and permission changes revoke affected sessions. Administration is restricted to the configured admin hostname (localhost permitted for development). No parent-domain cookie is shared with Mail.
 
 All private mutations require a matching Origin and session CSRF token. Server-side permissions protect every admin operation. Only users with admin-management permission can manage peers, and they cannot grant or manipulate privileges beyond their own scope. Main Admin cannot be deleted, disabled, demoted or modified by another admin; database triggers also guard its role and deletion. Self-service password and TOTP updates require existing credentials.
 
+## Account onboarding and ownership
+
+Creating an admin requires an explicit creation capability; default accounts receive broad operational permissions without account-administration capabilities. Per-account permissions are grouped by business function. Delegated managers cannot grant or manage capabilities outside their own scope and can never alter the Owner.
+
+New admins receive an automatically generated or administrator-selected temporary password with a seven-day expiration. They must choose a different permanent password before dashboard access. Required TOTP is enrolled by the new admin through a QR/manual key and a verified code; creators never receive that authenticator secret. Eight one-use recovery codes are shown after enrollment and stored only as hashes. Password resets revoke sessions and return a new temporary password; TOTP resets force enrollment when policy requires it.
+
+Ownership is represented by a singleton database record and protected account flags/triggers. The explicit transfer endpoint requires the current Owner, password, TOTP and typed confirmation; its target must already be active and enrolled. The database batch transfers ownership, demotes the previous Owner to broad operational access, revokes both sessions and records attribution. Ownership is never tied to a username or email. The real Owner will self-enroll; no temporary production Owner is authorized or created.
+
 ## Orders and notifications
 
-The server validates the bag against current product/variant/country availability and calculates monetary totals in integer minor units. D1 batches atomically reserve stock, insert the order and queue notifications. CHECK constraints prevent overselling; catalog and inventory revisions prevent stale admin edits from replacing newer stock. Admin order updates use optimistic version checks, preventing stale status/note overwrites. Unique idempotency keys avoid duplicate orders; a key reused with a different payload is rejected.
+The server validates the bag against current product/variant/country availability and calculates monetary totals in integer minor units. D1 batches atomically reserve stock, insert the order/history and queue notifications. Variant price/SKU, currency and configured delivery fees are snapshotted in the order. CHECK constraints prevent overselling; catalog and inventory revisions prevent stale admin edits from replacing newer stock. Admin order updates use optimistic version checks, preventing stale status/note overwrites. Unique idempotency keys avoid duplicate orders; a key reused with a different payload is rejected.
 
 Receipt URLs are private 256-bit capabilities, not sequential order IDs. They use no-store, noindex and no-referrer headers. Treat a receipt link as private because it contains delivery information. Admin-only notes never appear in receipts or outbound customer messages.
 

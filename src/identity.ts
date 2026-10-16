@@ -598,6 +598,20 @@ identity.use("/api/admin/users/:id/*", async (c, next) => {
     );
   await next();
 });
+identity.delete("/api/admin/users/:id/sessions/:session", async (c) => {
+  await c.env.DB.prepare(
+    "DELETE FROM sessions WHERE admin_id=? AND token_hash=?",
+  )
+    .bind(c.req.param("id"), c.req.param("session"))
+    .run();
+  await audit(
+    c.env.DB,
+    c.get("user").id,
+    "admin.session_revoked",
+    c.req.param("id"),
+  );
+  return c.json({ ok: true });
+});
 identity.put("/api/admin/users/:id/permissions", async (c) => {
   const d = z.object({ permissions: grants }).parse(await c.req.json());
   if (!grantable(c.get("user"), d.permissions))
@@ -821,7 +835,7 @@ function policyField(value = "required") {
     </select></label
   >`;
 }
-export function identityUsers(users: any[], actor: any) {
+export function identityUsers(users: any[], actor: any, sessions: any[] = []) {
   return html`<div class="admin-heading">
       <div>
         <p class="eyebrow">PEOPLE & ACCESS</p>
@@ -870,6 +884,32 @@ export function identityUsers(users: any[], actor: any) {
         (u) =>
           html`<details class="panel">
             <summary>Manage ${u.display_name || u.username}</summary>
+            <section>
+              <h3>Active sessions</h3>
+              ${
+                sessions.filter((s) => s.admin_id === u.id).length
+                  ? sessions
+                      .filter((s) => s.admin_id === u.id)
+                      .map(
+                        (s) =>
+                          html`<div class="content-link">
+                            <span
+                              >${s.user_agent || "Unknown browser"}<small
+                                >Expires
+                                ${new Date(s.expires_at).toISOString()}</small
+                              ></span
+                            ><button
+                              class="text-button"
+                              data-delete="/api/admin/users/${u.id}/sessions/${s.token_hash}"
+                              data-confirm="Revoke this admin session?"
+                            >
+                              Revoke
+                            </button>
+                          </div>`,
+                      )
+                  : html`<p>No active sessions.</p>`
+              }
+            </section>
             <form
               class="admin-editor"
               data-api="/api/admin/users/${u.id}/profile"

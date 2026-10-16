@@ -29,3 +29,11 @@ Server validates customer and current catalog/variant/country/price; server comp
 ## Deployment and validation
 
 Run typecheck, unit/integration tests, local D1 migrations, functional browser checks and Worker dry-run before checkpoints. Push to the existing repository without force. Production uses the dedicated website resources and explicit apex/admin custom domains recorded in BUILD_STATUS.md. Repeat DNS/resource inspection before changing deployment bindings. Never invent resource IDs or claim an unverified live deployment.
+
+## Refinement architecture
+
+`identity.ts` owns staged temporary-password onboarding, QR TOTP, recovery codes, account administration and the existing protected ownership-transfer model. `permissions.ts` provides grouped capabilities and broad operational defaults. No temporary production Owner is created; authenticated live QA waits for real enrollment.
+
+`commerce.ts` validates custom taxonomies, scheduled badge definitions/assignments, curated homepage sections and delivery rules. `commerce-ui.ts` supplies their admin editors; `fashion.ts` renders the curated sections. Translated content stays in D1 records, never in a freeform executable page builder. Product collection memberships and variant price/SKU values are persisted; inventory remains relational and authoritative. Migration 0012 adds delivery snapshots, order history and safe taxonomy deletion triggers.
+
+Holdings and Fashion share infrastructure but have distinct headers, palettes and composition. Fashion owns its navigation/logo, bag and checkout presentation. Language fallbacks and Arabic RTL remain shared. See STORE_MANAGEMENT.md for business workflows and verification boundaries.
