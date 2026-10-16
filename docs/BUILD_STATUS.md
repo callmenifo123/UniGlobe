@@ -14,9 +14,10 @@ The complete requested scope is preserved in `REFINEMENT_SPEC.md`. This pass sub
 
 ### Verification and current rollout
 
-- Latest stable deployed identity checkpoint: commit `4f09f48`, Worker `f4dd34f4-19dc-442a-9882-b418e57e3840`, migration 0011 applied. Public/admin bootstrap QR/Mail checks passed.
+- Latest deployed implementation: commit `1e59bc7`, Worker version `761f3fe4-7190-4546-8790-4a3e4caff51f`. All 12 migrations are applied. Production contains three curated sections, zero admins and zero orders. The existing separate website Worker, D1 and R2 resources were reused; no new paid service was enabled.
 - Refinement validation: 69 runtime tests, 14 browser journeys, typecheck and Worker build. Browser QA covers new collection/badge/section CRUD and resulting storefront output, temporary-password/QR onboarding, checkout/order persistence, media, mobile and four languages. Expanded WCAG A/AA checks cover 23 routes. Desktop/mobile screenshots reviewed; visual overlap and Tamil narrow-screen controls corrected.
-- Migration 0012 and the catalog/design checkpoint are awaiting the final stable rollout recorded below. Original supplied images remain unchanged. No new paid service or Mail changes are authorized.
+- Live Chromium checks passed for Holdings, Fashion, catalog/product, both coming-soon pages, bag persistence, intentionally closed checkout, mobile filters, all four languages/Arabic RTL, admin login and bootstrap QR. No browser runtime errors occurred. Desktop/mobile screenshots were reviewed; all eight Fashion homepage images and five catalog images loaded after scrolling. No production accounts or orders were created. Public-host admin routes return 404 and unauthenticated admin APIs return 401; sitemap returns 200.
+- All 15 original DNS records, Mail Worker settings, Mail domain binding and Mail D1/R2 resource metadata still match the pre-deployment baseline; Mail HTTPS returns 200. Original supplied images remain unchanged. Production dependency audit reports zero vulnerabilities. Website-only database snapshots were saved privately before migrations.
 - Owner explicitly chose self-enrollment on 2026-10-16. **Do not create a temporary production Owner or change the ownership model.** Production has no Owner yet; authenticated production CRUD, account/permission/TOTP workflows and controlled live orders are deferred until enrollment. Local tests are not claimed as authenticated production verification.
 
 ### Remaining owner-dependent work
@@ -79,4 +80,4 @@ No known unfinished local application implementation blocker remains. Production
 
 ## Git checkpoints
 
-Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. Final implementation: `c98d517`. Tamil typography/final local status: `28344b3`. Environment blocker checkpoint: `2ba6fcf`. The next checkpoint records the successful production deployment; `git log -1` identifies the latest repository checkpoint.
+Foundation: `34f3432`. Initial complete local build: `b4b607b` / status `44d8800`. Final implementation: `c98d517`. Tamil typography/final local status: `28344b3`. Environment blocker checkpoint: `2ba6fcf`. Identity refinement: `4f09f48`. Brand/catalog/store refinement deployed: `1e59bc7`. The following documentation checkpoint records final live verification; `git log -1` identifies the latest repository checkpoint.
