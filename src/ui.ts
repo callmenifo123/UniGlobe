@@ -58,6 +58,7 @@ export function shell(
         <meta property="og:type" content="website" />
         ${image ? html`<meta property="og:image" content="${image}" />` : ""}${admin ? html`<meta name="robots" content="noindex,nofollow" /><meta name="csrf-token" content="${csrf}" />` : ""}
         <link rel="stylesheet" href="/style.css" />
+        ${!admin ? html`<link rel="stylesheet" href="/assets/public-design.css" />` : ""}
         ${branding.favicon ? html`<link rel="icon" href="${branding.favicon}" />` : html`<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" /><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" /><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png" />`}
         <link
           rel="apple-touch-icon"
@@ -193,7 +194,11 @@ function productBadges(p: Product, l: Locale, placement: string) {
 export function card(p: Product, l: Locale) {
   return html`<article class="product-card">
     <a class="product-photo" href="/fashion/products/${p.slug}"
-      >${p.images[0] ? html`<img src="${p.images[0]}" ${raw(/^\/assets\/product-[1-6]\.webp$/.test(p.images[0]) ? `srcset="${p.images[0].replace(".webp", "-small.webp")} 480w, ${p.images[0]} 1000w" sizes="(max-width: 760px) 44vw, 22vw"` : "")} alt="${text(p.name, l)}" loading="lazy" width="804" height="1000" />` : html`<div class="image-empty">${t("Image coming soon", l)}</div>`}${p.images[1] ? html`<img class="secondary" src="${p.images[1]}" alt="" loading="lazy" width="804" height="1000" />` : ""}${productBadges(p, l, "card")}</a
+      >${p.images[0] ? html`<img src="${p.images[0]}" ${raw(/^\/assets\/product-[1-6]\.webp$/.test(p.images[0]) ? `srcset="${p.images[0].replace(".webp", "-small.webp")} 480w, ${p.images[0]} 1000w" sizes="(max-width: 760px) 44vw, 22vw"` : "")} alt="${text(p.name, l)}" loading="lazy" width="804" height="1000" />` : html`<div class="image-empty">${t("Image coming soon", l)}</div>`}${p.images[1] ? html`<img class="secondary" src="${p.images[1]}" alt="" loading="lazy" width="804" height="1000" />` : ""}${productBadges(p, l, "card")}<span
+        class="product-discover"
+        aria-hidden="true"
+        >${t("view", l)} <span>↗</span></span
+      ></a
     >
     <div class="product-meta">
       <a href="/fashion/products/${p.slug}" dir="auto">${text(p.name, l)}</a
@@ -206,46 +211,67 @@ export function card(p: Product, l: Locale) {
   </article>`;
 }
 export function home(content: any, l: Locale, brand: any) {
-  return html`<main id="main">
-    <section class="holdings-intro wrap">
+  return html`<main id="main" class="holdings-home">
+    <section class="holdings-intro">
       <div class="holdings-orbit" aria-hidden="true">
         <span></span><span></span><span></span>
       </div>
-      <div class="eyebrow">${text(content.eyebrow, l)}</div>
-      <h1 dir="auto">${text(content.title, l)}</h1>
-      <div class="intro-bottom">
+      <div class="holdings-opening">
+        <div class="eyebrow">${text(content.eyebrow, l)}</div>
+        <h1 dir="auto">${text(content.title, l)}</h1>
+        <p class="holdings-lead" dir="auto">${text(content.intro, l)}</p>
+        <a class="button" href="${content.ctaHref || "/fashion"}"
+          >${text(content.cta, l)} <span aria-hidden="true">↗</span></a
+        >
         <span class="index-number">${text(content.indexLabel, l)}</span>
-        <p dir="auto">${text(content.intro, l)}</p>
       </div>
+      <figure class="holdings-window">
+        <img
+          src="${content.image || brand.heroImage || "/assets/product-2.webp"}"
+          alt="UniGlobe Fashion collection"
+          width="782"
+          height="819"
+          fetchpriority="high"
+        />
+        <figcaption>
+          <span class="status-dot" aria-hidden="true"></span
+          >${text(content.fashionLabel, l)}<span
+            >${text(content.featureState, l)}</span
+          >
+        </figcaption>
+      </figure>
     </section>
     <section class="wrap divisions">
       <div class="section-top">
         <h2 dir="auto">${text(content.divisionTitle, l)}</h2>
         <p dir="auto">${text(content.divisionIntro, l)}</p>
       </div>
-      <a class="division-row" href="/fashion"
-        ><span>01</span>
-        <h3>${text(content.fashionLabel, l)}</h3>
-        <span class="division-state">${text(content.fashionState, l)}</span
-        ><span>↗</span></a
-      ><a class="division-row" href="/real-estate"
-        ><span>02</span>
-        <h3>${text(content.realEstateLabel, l)}</h3>
-        <span class="division-state">${t("soon", l)}</span><span>↗</span></a
-      ><a class="division-row" href="/academy"
-        ><span>03</span>
-        <h3>${text(content.academyLabel, l)}</h3>
-        <span class="division-state">${t("soon", l)}</span><span>↗</span></a
-      >
+      <div class="division-directory">
+        <a class="division-row division-active" href="/fashion"
+          ><span class="division-number">01</span>
+          <h3>${text(content.fashionLabel, l)}</h3>
+          <span class="division-state"
+            ><i class="status-dot" aria-hidden="true"></i
+            >${text(content.fashionState, l)}</span
+          ><span class="division-arrow" aria-hidden="true">↗</span></a
+        >
+        <a class="division-row" href="/real-estate"
+          ><span class="division-number">02</span>
+          <h3>${text(content.realEstateLabel, l)}</h3>
+          <span class="division-state">${t("soon", l)}</span
+          ><span class="division-arrow" aria-hidden="true">↗</span></a
+        >
+        <a class="division-row" href="/academy"
+          ><span class="division-number">03</span>
+          <h3>${text(content.academyLabel, l)}</h3>
+          <span class="division-state">${t("soon", l)}</span
+          ><span class="division-arrow" aria-hidden="true">↗</span></a
+        >
+      </div>
     </section>
     <section class="division-feature">
-      <div class="division-image">
-        <img
-          src="${content.image || brand.heroImage || "/assets/product-2.webp"}"
-          alt="UniGlobe Fashion collection"
-          width="782"
-          height="819"
-        />
+      <div class="feature-monogram" aria-hidden="true">
+        <span>U</span><i></i>
       </div>
       <div class="division-copy">
         <div class="eyebrow">
@@ -254,9 +280,9 @@ export function home(content: any, l: Locale, brand: any) {
         </div>
         <h2 dir="auto">${text(content.featureTitle, l)}</h2>
         <p dir="auto">${text(content.body, l)}</p>
-        <a class="button" href="${content.ctaHref || "/fashion"}"
-          >${text(content.cta, l)} <span>↗</span></a
-        ><span class="large-number" aria-hidden="true">01</span>
+        <a class="underlink" href="${content.ctaHref || "/fashion"}"
+          >${text(content.cta, l)} <span aria-hidden="true">↗</span></a
+        >
       </div>
     </section>
   </main>`;

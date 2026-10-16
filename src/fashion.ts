@@ -38,10 +38,13 @@ export function curatedFashion(
         return html`<section
           class="campaign campaign-${s.layout || "editorial"}"
         >
-          <div class="campaign-visual">
-            ${s.image ? html`<img src="${s.image}" alt="${text(s.title, l)}" width="900" height="1050" fetchpriority="${index === 0 ? "high" : "auto"}" />` : ""}
+          ${copy}
+          <div class="campaign-art">
+            <div class="campaign-visual">
+              ${s.image ? html`<img src="${s.image}" alt="${text(s.title, l)}" width="900" height="1050" fetchpriority="${index === 0 ? "high" : "auto"}" />` : ""}
+            </div>
+            ${s.secondaryImage ? html`<div class="campaign-secondary"><img src="${s.secondaryImage}" alt="" width="700" height="900" loading="lazy" /><span>UNIGLOBE FASHION</span></div>` : ""}
           </div>
-          ${copy}${s.secondaryImage ? html`<div class="campaign-secondary"><img src="${s.secondaryImage}" alt="" width="700" height="900" loading="lazy" /><span>UNIGLOBE FASHION</span></div>` : ""}
           <div class="campaign-index" aria-hidden="true">
             ${String(index + 1).padStart(2, "0")} / THE EDIT
           </div>

@@ -1,5 +1,13 @@
 # Build status
 
+## Public design refinement — 2026-10-16 — not deployed
+
+- Started from `40167cf` on `work` in `/workspace/UniGlobe`; baseline typecheck, 69 runtime tests, 14 browser journeys/accessibility and dry-run build passed before edits.
+- Rebuilt the Holdings opening around navy/ivory editorial typography and photography, compact division navigation and a distinct typographic feature. Redesigned Fashion campaigns, product/catalog presentation, editorial/collection sections and public content pages. Improved public navigation, selects/filters, buttons, variant/quantity controls and mobile gallery layouts. Approved logos/favicon assets and subtle Fashion parent attribution are preserved.
+- Public styles are isolated in `public/assets/public-design.css`, loaded only for public pages. Admin UX, backend/business behavior, APIs, data/schema, translations infrastructure, original assets and Cloudflare configuration are unchanged. No production/Mail operations or new paid services.
+- Final checks passed: 69 runtime tests, 14 browser journeys, automated WCAG A/AA across 23 routes, typecheck and Worker dry-run build. Desktop/mobile visual review and focused image/loading/layout/runtime checks passed. The public stylesheet is absent on admin login.
+- Design notes and committed desktop/mobile screenshots: [PUBLIC_DESIGN_REVIEW.md](PUBLIC_DESIGN_REVIEW.md). This branch awaits design review; **do not deploy without authorization**.
+
 ## Branding and favicon pass — 2026-10-16
 
 - Inspected both supplied `ChatGPT Image Oct 16, 2026` PNGs from `origin/main`: both visibly say Holdings. `05_18_02 AM-2` supplies the horizontal Holdings lockup; `05_17_58 AM-1` supplies the shared symbol for icons. The existing approved Fashion logo remains primary on Fashion pages. Original assets are preserved unchanged.
