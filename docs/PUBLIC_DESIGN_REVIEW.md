@@ -1,6 +1,6 @@
 # Public design revamp — 2026-10-17
 
-Built in `/workspace/UniGlobe` from `8252972` on `work`, following the previously deployed `b8f41f8` design. **This revamp is for review only and has not been deployed.** Production remains on Worker version `29aba046-0aaa-4ef6-9abb-6b661129a45c`.
+Built in `/workspace/UniGlobe` from `8252972` on `work`, following the previously deployed `b8f41f8` design. **Approved and deployed as commit `d23ff25` on 2026-10-17**, Worker version `c04d8911-42cf-4bd9-9e0a-7875f6f7b700`. Previous version / rollback target: `29aba046-0aaa-4ef6-9abb-6b661129a45c`. See `BUILD_STATUS.md` for the deployment record and live verification.
 
 ## Direction and rationale
 
@@ -38,6 +38,6 @@ Final checks passed: TypeScript, 69 Workers-runtime tests, 15 Chromium browser j
 
 Additional review covered desktop/mobile Holdings, Fashion, catalog, product, About, Contact, Real Estate and bag; tablet/small-mobile checks covered all four division entry points in all four languages. Images loaded, no horizontal overflow or browser runtime errors occurred, and public/admin favicon requests succeeded. Filter keyboard open/Escape/focus return, open-dialog accessibility and reduced-motion behavior passed. These automated accessibility checks supplement visual review and do not constitute an independent certification.
 
-The public stylesheet remains isolated from Admin. Admin UX, security, API contracts, catalog/order/delivery/notification business logic, schema, production data and Cloudflare configuration are unchanged. The only additional server-rendering read obtains existing division copy/images for the public homepage. No deployment, DNS changes, migrations, production operations, Mail changes or new paid services occurred.
+The public stylesheet remains isolated from Admin. Admin UX, security, API contracts, catalog/order/delivery/notification business logic, schema, production data and Cloudflare configuration are unchanged. The only additional server-rendering read obtains existing division copy/images for the public homepage. Implementation involved no production operations. The subsequent approved deployment changed only the website code/assets version; no DNS changes, migrations, Mail changes or new paid services occurred.
 
-No blocking defect remains from this pass. Existing preview products, unfinished business translations and closed production ordering remain owner-configuration concerns. Production deployment requires review and approval of this new design.
+No blocking defect remains from this pass. Existing preview products, unfinished business translations and closed production ordering remain owner-configuration concerns. Approved production verification passed at 1440, 768, 390 and 320 pixels, including all four languages, Arabic RTL, keyboard division navigation, catalog controls, gallery scrolling, favicons, image loading, reduced motion and public/admin authorization boundaries. Live automated accessibility checks passed on Holdings, Fashion and catalog at desktop/mobile sizes. No rollback was required.
