@@ -73,6 +73,34 @@ test("public pages, official branding, mobile and four language directions", asy
   }
   expect(errors).toEqual([]);
 });
+test("Fashion returns to Holdings and all three divisions remain discoverable with keyboard navigation", async ({
+  page,
+}) => {
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const lang of ["en", "ar"]) {
+      await page.goto("/fashion?lang=" + lang);
+      await expect(page.locator(".site-header img")).toHaveCount(1);
+      await expect(page.locator(".site-header img")).toHaveAttribute(
+        "alt",
+        "UniGlobe Fashion",
+      );
+      await page.locator(".parent-return").focus();
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(/\/$/);
+      await expect(page.locator("html")).toHaveAttribute("lang", lang);
+      for (const division of ["real-estate", "academy", "fashion"]) {
+        await page.locator(`.sector-heading a[href="/${division}"]`).focus();
+        await page.keyboard.press("Enter");
+        await expect(page).toHaveURL(new RegExp(`/${division}$`));
+        await expect(page.locator("main h1")).toBeVisible();
+        await expect(page.locator("html")).toHaveAttribute("lang", lang);
+        await page.locator('.footer-worlds a[href="/"]').click();
+        await expect(page).toHaveURL(/\/$/);
+      }
+    }
+  }
+});
 test("catalog filtering, product selection and persistent bag", async ({
   page,
 }) => {
@@ -278,6 +306,9 @@ test("small mobile and tablet layouts remain usable in every language", async ({
     for (const lang of ["en", "ar", "si", "ta"]) {
       for (const path of [
         "/",
+        "/fashion",
+        "/real-estate",
+        "/academy",
         "/fashion/shop",
         "/fashion/products/forever-tee",
         "/bag",

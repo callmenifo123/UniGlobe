@@ -230,7 +230,16 @@ app.get("*", async (c) => {
     image = content.image ? c.env.SITE_URL + content.image : "";
   }
   if (path === "/") {
-    body = home(content, l, branding);
+    body = home(
+      content,
+      l,
+      branding,
+      await Promise.all(
+        ["fashion", "real-estate", "academy"].map((id) =>
+          record(c.env.DB, "content", id),
+        ),
+      ),
+    );
     structured = {
       "@context": "https://schema.org",
       "@type": "Organization",

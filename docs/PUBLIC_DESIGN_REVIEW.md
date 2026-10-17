@@ -1,28 +1,43 @@
-# Public design review — 2026-10-16
+# Public design revamp — 2026-10-17
 
-This public-only design pass starts from `40167cf` on `work`. It was implemented in `/workspace/UniGlobe`, approved, and deployed as commit `b8f41f8` on 2026-10-16. Production Worker version: `29aba046-0aaa-4ef6-9abb-6b661129a45c`. See `BUILD_STATUS.md` for verification and the rollback target.
+Built in `/workspace/UniGlobe` from `8252972` on `work`, following the previously deployed `b8f41f8` design. **This revamp is for review only and has not been deployed.** Production remains on Worker version `29aba046-0aaa-4ef6-9abb-6b661129a45c`.
 
-## Direction
+## Direction and rationale
 
-Holdings uses navy, ivory and restrained gold with editorial typography, an arched photographic opening and a numbered division directory. Fashion is visibly the active business without making claims about future divisions. Its feature content is presented as a typographic closing section instead of repeating the hero photograph.
+The earlier Holdings page led with a Fashion photograph and repeated the Fashion feature; the future divisions were mostly text links. Its visual weight made the parent company feel like a storefront. The new opening is a company masthead followed by three staggered photographic portals. Fashion, Real Estate and Academy each receive a distinct image, heading, introduction and destination. A full-width navy statement with subtle orbital linework establishes the shared identity. Fashion's active chapter follows as a compact feature instead of dominating the opening.
 
-Fashion uses warm ivory, deep teal and gold drawn from the approved identity. A layered campaign composition, larger portrait product imagery, serif product names and framed editorial stories give it a storefront identity. Parent attribution remains in the footer. Merchandising still renders the configured section types, ordering, products, taxonomy and translated copy; no campaigns, sales performance or business data were invented.
+Fashion is designed as an editorial issue: oversized serif typography, numbered sections, an asymmetric two-image opening, a collection introduction beside staggered product pairs, and a sage-colored image story with italic display type. Photography, rhythm and typography carry the design rather than bordered containers. Catalog, collection pages, product details, bag and checkout use the same public visual language while retaining their existing behavior. All configurable merchandising section types, product selection, badges, section ordering and taxonomy remain supported.
 
-Public navigation, native selects, filters, quantity steppers, variant choices, buttons and disclosure panels share a consistent treatment. Keyboard semantics remain native. Mobile uses two-column product grids, a scroll-snap product gallery, responsive campaign compositions and the existing accessible filter dialog. Reduced-motion and forced-color preferences are respected.
+The approved Holdings and Fashion logos and shared favicon assets are unchanged. Fashion is the only prominent logo on Fashion pages. A small translated “Back to UniGlobe Holdings” link above its header makes the parent site reachable immediately; the footer provides parent attribution and links to all divisions. Holdings navigation now exposes all three divisions directly.
+
+## Responsive behavior and controls
+
+Desktop uses the broad three-sector composition and Fashion's editorial image spreads. Tablet scales typography to retain complete words and readable product names. Mobile changes the division portals into alternating image/text rows, moves merchandising introductions above two-column product grids, stacks stories and retains the product gallery's scroll-snap behavior.
+
+Buttons, native selects, variant choices, quantity controls, filter dialogs and disclosure panels have consistent public styling. Native keyboard behavior, focus visibility, Escape/focus return, reduced motion, forced colors and Arabic RTL are preserved. The new return path is covered by a keyboard browser journey at desktop and mobile sizes in English and Arabic, including retained language selection while visiting every division.
 
 ## Review images
 
-These screenshots use local development preview content; they do not imply production data changes.
+Screenshots use local preview content and do not indicate production data changes. All visible images were loaded before capture.
 
-| Page | Desktop | Mobile |
-| --- | --- | --- |
-| Holdings | [View](design-review/holdings-desktop.png) | [View](design-review/holdings-mobile.png) |
-| Fashion | [View](design-review/fashion-desktop.png) | [View](design-review/fashion-mobile.png) |
+| Page     | Desktop (1440)                             | Tablet (768)                              | Mobile (390)                              |
+| -------- | ------------------------------------------ | ----------------------------------------- | ----------------------------------------- |
+| Holdings | [View](design-review/holdings-desktop.png) | [View](design-review/holdings-tablet.png) | [View](design-review/holdings-mobile.png) |
+| Fashion  | [View](design-review/fashion-desktop.png)  | [View](design-review/fashion-tablet.png)  | [View](design-review/fashion-mobile.png)  |
 
-## Boundaries and verification
+## Assets and configuration
 
-`public/assets/public-design.css` is included only for public HTML. Admin markup, stylesheets, security and behavior are unchanged. The existing shared stylesheet and logo/favicon assets are unchanged. No database records, schema, API contracts, order/delivery/notification behavior, translations infrastructure or Cloudflare configuration changed. No production or Mail operations were performed; no services or dependencies were added.
+- `estate-concept.webp` and `academy-concept.webp` are newly generated conceptual artwork: a warm limestone architecture study and an open-book still life. They represent the future divisions, not actual property listings, campuses, courses or completed company projects. Both are optimized, self-hosted WebP files. The coming-soon presentation is retained.
+- Existing page images configured by the owner take precedence over those fallback illustrations. Homepage sector introductions come from the existing division content records; no new data model, migration or configuration reset is involved. The homepage CTA remains configurable.
+- Display type is self-hosted Latin Modern Roman regular/italic under the GUST Font License, included at `public/assets/fonts/LATIN-MODERN-LICENSE.txt`. Existing Arabic, Sinhala and Tamil font coverage remains intact. No external font service or package dependency was added.
+- Original supplied photography, logos and favicon assets were preserved unchanged.
 
-Baseline and final verification: typecheck, 69 Workers-runtime tests, 14 Chromium browser journeys, WCAG A/AA checks across 23 routes and Worker dry-run build passed. Desktop/mobile review covered Holdings, Fashion, catalog, product, About, Contact, Real Estate and bag; the existing journeys also cover checkout/receipts, Academy, tablet/small mobile, all four languages and admin workflows. Focused checks confirmed image loading, no horizontal overflow or runtime errors, and absence of the public stylesheet on admin login. Additional checks passed for keyboard filter opening, Escape/focus return, open-dialog accessibility, reduced motion, Arabic RTL and Tamil.
+## Verification and boundaries
 
-The public design has been approved and deployed. Existing preview products, incomplete business translations and closed production ordering remain business-configuration concerns, unchanged by this design pass.
+Final checks passed: TypeScript, 69 Workers-runtime tests, 15 Chromium browser journeys, automated WCAG A/AA checks across 23 public/admin routes, and the Worker **dry-run** build. Expanded browser coverage includes Holdings, Fashion and both coming-soon pages at 320 and 768 pixels in every supported language. Existing catalog, cart, checkout, order, admin editing, media, roles and authenticator journeys still pass.
+
+Additional review covered desktop/mobile Holdings, Fashion, catalog, product, About, Contact, Real Estate and bag; tablet/small-mobile checks covered all four division entry points in all four languages. Images loaded, no horizontal overflow or browser runtime errors occurred, and public/admin favicon requests succeeded. Filter keyboard open/Escape/focus return, open-dialog accessibility and reduced-motion behavior passed. These automated accessibility checks supplement visual review and do not constitute an independent certification.
+
+The public stylesheet remains isolated from Admin. Admin UX, security, API contracts, catalog/order/delivery/notification business logic, schema, production data and Cloudflare configuration are unchanged. The only additional server-rendering read obtains existing division copy/images for the public homepage. No deployment, DNS changes, migrations, production operations, Mail changes or new paid services occurred.
+
+No blocking defect remains from this pass. Existing preview products, unfinished business translations and closed production ordering remain owner-configuration concerns. Production deployment requires review and approval of this new design.

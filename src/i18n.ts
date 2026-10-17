@@ -1,5 +1,20 @@
 import type { Locale } from "./model";
 export const dictionary: Record<string, [string, string, string, string]> = {
+  "Back to UniGlobe Holdings": [
+    "Back to UniGlobe Holdings",
+    "العودة إلى يوني غلوب القابضة",
+    "UniGlobe Holdings වෙත ආපසු",
+    "UniGlobe Holdings முகப்பிற்குத் திரும்பு",
+  ],
+  "Discover our divisions": [
+    "Discover our divisions",
+    "اكتشف قطاعاتنا",
+    "අපගේ අංශ ගවේෂණය කරන්න",
+    "எங்கள் பிரிவுகளை அறியுங்கள்",
+  ],
+  "Real Estate": ["Real Estate", "العقارات", "දේපළ වෙළඳාම්", "ரியல் எஸ்டேட்"],
+  Academy: ["Academy", "الأكاديمية", "අධ්‍යාපන ආයතනය", "கல்வியகம்"],
+
   "Filters & sort": [
     "Filters & sort",
     "التصفية والترتيب",

@@ -91,73 +91,89 @@ export function shell(
                     : ""
                 }
               </header>`
-            : html`<header class="site-header">
-                <a
-                  class="wordmark brand-signature"
-                  href="${fashionBrand ? "/fashion" : "/"}"
-                  aria-label="${fashionBrand ? branding.fashionName : branding.companyName || "UniGlobe Holdings"}"
-                  >${(fashionBrand ? branding.fashionLogo : holdings) ? html`<img src="${fashionBrand ? branding.fashionLogo : holdings}" alt="${fashionBrand ? branding.fashionName : branding.companyName}" width="${fashionBrand ? 130 : 1620}" height="${fashionBrand ? 125 : 615}" />` : html`UNIGLOBE<span>${fashionBrand ? "FASHION" : "HOLDINGS"}</span>`}</a
-                >
-                <nav aria-label="Main navigation">
+            : html`${
+                  fashionBrand
+                    ? html`<div class="brand-context">
+                        <a href="/" class="parent-return"
+                          ><span aria-hidden="true">↖</span>
+                          ${t("Back to UniGlobe Holdings", lang)}</a
+                        ><span aria-hidden="true">01 / UNIGLOBE FASHION</span>
+                      </div>`
+                    : ""
+                }
+                <header class="site-header">
                   <a
-                    href="${fashionBrand ? "/fashion/shop" : "/fashion"}"
-                    ${raw(page === "fashion" ? 'aria-current="page"' : "")}
-                    >${fashionBrand ? t("all", lang) : t("fashion", lang)}</a
-                  ><a href="/about">${t("about", lang)}</a
-                  ><a href="/contact">${t("contact", lang)}</a>
-                </nav>
-                <div class="header-tools">
-                  <form method="get" class="language">
-                    <label class="sr-only" for="language"
-                      >${t("Language", lang)}</label
-                    ><select
-                      id="language"
-                      name="lang"
-                      aria-label="${t("Language", lang)}"
-                    >
-                      <option
-                        value="en"
-                        ${raw(lang === "en" ? "selected" : "")}
-                      >
-                        EN
-                      </option>
-                      <option
-                        value="ar"
-                        ${raw(lang === "ar" ? "selected" : "")}
-                      >
-                        العربية
-                      </option>
-                      <option
-                        value="si"
-                        ${raw(lang === "si" ? "selected" : "")}
-                      >
-                        සිංහල
-                      </option>
-                      <option
-                        value="ta"
-                        ${raw(lang === "ta" ? "selected" : "")}
-                      >
-                        தமிழ்
-                      </option></select
-                    ><button class="language-go">Go</button>
-                  </form>
-                  <a href="/bag" class="bag-link"
-                    >${t("bag", lang)} <span data-bag-count>0</span></a
+                    class="wordmark brand-signature"
+                    href="${fashionBrand ? "/fashion" : "/"}"
+                    aria-label="${fashionBrand ? branding.fashionName : branding.companyName || "UniGlobe Holdings"}"
+                    >${(fashionBrand ? branding.fashionLogo : holdings) ? html`<img src="${fashionBrand ? branding.fashionLogo : holdings}" alt="${fashionBrand ? branding.fashionName : branding.companyName}" width="${fashionBrand ? 130 : 1620}" height="${fashionBrand ? 125 : 615}" />` : html`UNIGLOBE<span>${fashionBrand ? "FASHION" : "HOLDINGS"}</span>`}</a
                   >
-                </div>
-              </header>`
+                  <nav aria-label="Main navigation">
+                    <a
+                      href="${fashionBrand ? "/fashion/shop" : "/fashion"}"
+                      ${raw(page === "fashion" ? 'aria-current="page"' : "")}
+                      >${fashionBrand ? t("all", lang) : t("fashion", lang)}</a
+                    >${!fashionBrand ? html`<a href="/real-estate">${t("Real Estate", lang)}</a><a href="/academy">${t("Academy", lang)}</a>` : ""}<a
+                      href="/about"
+                      >${t("about", lang)}</a
+                    ><a href="/contact">${t("contact", lang)}</a>
+                  </nav>
+                  <div class="header-tools">
+                    <form method="get" class="language">
+                      <label class="sr-only" for="language"
+                        >${t("Language", lang)}</label
+                      ><select
+                        id="language"
+                        name="lang"
+                        aria-label="${t("Language", lang)}"
+                      >
+                        <option
+                          value="en"
+                          ${raw(lang === "en" ? "selected" : "")}
+                        >
+                          EN
+                        </option>
+                        <option
+                          value="ar"
+                          ${raw(lang === "ar" ? "selected" : "")}
+                        >
+                          العربية
+                        </option>
+                        <option
+                          value="si"
+                          ${raw(lang === "si" ? "selected" : "")}
+                        >
+                          සිංහල
+                        </option>
+                        <option
+                          value="ta"
+                          ${raw(lang === "ta" ? "selected" : "")}
+                        >
+                          தமிழ்
+                        </option></select
+                      ><button class="language-go">Go</button>
+                    </form>
+                    <a href="/bag" class="bag-link"
+                      >${t("bag", lang)} <span data-bag-count>0</span></a
+                    >
+                  </div>
+                </header>`
         }${body}${
           admin
             ? ""
             : html`<footer class="site-footer">
                 <div class="footer-brand">
-                  ${fashionBrand ? branding.fashionName || "UniGlobe Fashion" : branding.companyName || "UniGlobe Holdings"}<span
-                    dir="auto"
+                  <a
+                    class="footer-home"
+                    href="${fashionBrand ? "/fashion" : "/"}"
+                    >${fashionBrand ? branding.fashionName || "UniGlobe Fashion" : branding.companyName || "UniGlobe Holdings"}</a
+                  ><span dir="auto"
                     >${fashionBrand ? "A division of UniGlobe Holdings" : text(footer.title, lang)}</span
                   >
                 </div>
-                <div>
-                  <a href="/fashion">UniGlobe Fashion</a
+                <div class="footer-worlds">
+                  <a href="/">UniGlobe Holdings</a
+                  ><a href="/fashion">UniGlobe Fashion</a
                   ><a href="/real-estate">Real Estate</a
                   ><a href="/academy">Academy</a>
                 </div>
@@ -210,80 +226,118 @@ export function card(p: Product, l: Locale) {
     ${p.placeholder ? html`<small class="muted">${t("Preview catalog · details being finalized", l)}</small>` : ""}
   </article>`;
 }
-export function home(content: any, l: Locale, brand: any) {
+export function home(
+  content: any,
+  l: Locale,
+  brand: any,
+  divisions: any[] = [],
+) {
+  const sectors = [
+    {
+      key: "fashion",
+      name: content.fashionLabel,
+      image: content.image || brand.heroImage || "/assets/product-2.webp",
+      info: divisions[0],
+      state: text(content.fashionState, l),
+    },
+    {
+      key: "real-estate",
+      name: content.realEstateLabel,
+      image: divisions[1]?.image || "/assets/estate-concept.webp",
+      info: divisions[1],
+      state: divisions[1]?.comingSoon === false ? "" : t("soon", l),
+    },
+    {
+      key: "academy",
+      name: content.academyLabel,
+      image: divisions[2]?.image || "/assets/academy-concept.webp",
+      info: divisions[2],
+      state: divisions[2]?.comingSoon === false ? "" : t("soon", l),
+    },
+  ];
   return html`<main id="main" class="holdings-home">
-    <section class="holdings-intro">
-      <div class="holdings-orbit" aria-hidden="true">
-        <span></span><span></span><span></span>
+    <section class="group-opening wrap">
+      <div class="group-intro">
+        <div>
+          <p class="eyebrow">${text(content.eyebrow, l)}</p>
+          <h1 dir="auto">${text(content.title, l)}</h1>
+        </div>
+        <div class="group-intro-note">
+          <span class="group-symbol" aria-hidden="true"
+            ><i></i><i></i><i></i
+          ></span>
+          <p dir="auto">${text(content.intro, l)}</p>
+          <a href="#our-divisions" class="underlink"
+            >${t("Discover our divisions", l)}
+            <span aria-hidden="true">↓</span></a
+          >
+        </div>
       </div>
-      <div class="holdings-opening">
-        <div class="eyebrow">${text(content.eyebrow, l)}</div>
-        <h1 dir="auto">${text(content.title, l)}</h1>
-        <p class="holdings-lead" dir="auto">${text(content.intro, l)}</p>
+      <div class="sector-triptych" id="our-divisions">
+        ${sectors.map(
+          (sector, i) =>
+            html`<article class="sector-portal sector-${sector.key}">
+              <a href="/${sector.key}" class="sector-image"
+                ><img
+                  src="${sector.image}"
+                  alt="${text(sector.name, l)}"
+                  width="800"
+                  height="1000"
+                  loading="${i === 0 ? "eager" : "lazy"}"
+                /><span class="sector-state">${sector.state}</span
+                ><span class="sector-open" aria-hidden="true">↗</span></a
+              >
+              <div class="sector-heading">
+                <span class="sector-number">0${i + 1}</span>
+                <h2><a href="/${sector.key}">${text(sector.name, l)}</a></h2>
+              </div>
+              <p dir="auto">${text(sector.info?.intro, l)}</p>
+            </article>`,
+        )}
+      </div>
+    </section>
+    <section class="group-perspective wrap">
+      <div class="perspective-index">
+        <span>${text(content.indexLabel, l)}</span
+        ><span aria-hidden="true">01—03</span>
+      </div>
+      <h2 dir="auto">${text(content.divisionTitle, l)}</h2>
+      <div class="perspective-bottom">
+        <p dir="auto">${text(content.divisionIntro, l)}</p>
+        <a class="underlink" href="/about"
+          >${t("about", l)} <span aria-hidden="true">↗</span></a
+        >
+      </div>
+      <div class="perspective-orbits" aria-hidden="true">
+        <i></i><i></i><i></i>
+      </div>
+    </section>
+    <section class="group-current wrap">
+      <div class="current-label">
+        <span class="eyebrow">${text(content.featureEyebrow, l)}</span
+        ><span class="current-state"
+          ><i class="status-dot" aria-hidden="true"></i
+          >${text(content.featureState, l)}</span
+        >
+      </div>
+      <div class="current-copy">
+        <h2 dir="auto">${text(content.featureTitle, l)}</h2>
+        <p dir="auto">${text(content.body, l)}</p>
         <a class="button" href="${content.ctaHref || "/fashion"}"
           >${text(content.cta, l)} <span aria-hidden="true">↗</span></a
         >
-        <span class="index-number">${text(content.indexLabel, l)}</span>
       </div>
-      <figure class="holdings-window">
-        <img
+      <a
+        href="${content.ctaHref || "/fashion"}"
+        class="current-image"
+        aria-label="${text(content.cta, l)}"
+        ><img
           src="${content.image || brand.heroImage || "/assets/product-2.webp"}"
-          alt="UniGlobe Fashion collection"
+          alt=""
           width="782"
           height="819"
-          fetchpriority="high"
-        />
-        <figcaption>
-          <span class="status-dot" aria-hidden="true"></span
-          >${text(content.fashionLabel, l)}<span
-            >${text(content.featureState, l)}</span
-          >
-        </figcaption>
-      </figure>
-    </section>
-    <section class="wrap divisions">
-      <div class="section-top">
-        <h2 dir="auto">${text(content.divisionTitle, l)}</h2>
-        <p dir="auto">${text(content.divisionIntro, l)}</p>
-      </div>
-      <div class="division-directory">
-        <a class="division-row division-active" href="/fashion"
-          ><span class="division-number">01</span>
-          <h3>${text(content.fashionLabel, l)}</h3>
-          <span class="division-state"
-            ><i class="status-dot" aria-hidden="true"></i
-            >${text(content.fashionState, l)}</span
-          ><span class="division-arrow" aria-hidden="true">↗</span></a
-        >
-        <a class="division-row" href="/real-estate"
-          ><span class="division-number">02</span>
-          <h3>${text(content.realEstateLabel, l)}</h3>
-          <span class="division-state">${t("soon", l)}</span
-          ><span class="division-arrow" aria-hidden="true">↗</span></a
-        >
-        <a class="division-row" href="/academy"
-          ><span class="division-number">03</span>
-          <h3>${text(content.academyLabel, l)}</h3>
-          <span class="division-state">${t("soon", l)}</span
-          ><span class="division-arrow" aria-hidden="true">↗</span></a
-        >
-      </div>
-    </section>
-    <section class="division-feature">
-      <div class="feature-monogram" aria-hidden="true">
-        <span>U</span><i></i>
-      </div>
-      <div class="division-copy">
-        <div class="eyebrow">
-          ${text(content.featureEyebrow, l)}
-          <span class="status-dot"></span> ${text(content.featureState, l)}
-        </div>
-        <h2 dir="auto">${text(content.featureTitle, l)}</h2>
-        <p dir="auto">${text(content.body, l)}</p>
-        <a class="underlink" href="${content.ctaHref || "/fashion"}"
-          >${text(content.cta, l)} <span aria-hidden="true">↗</span></a
-        >
-      </div>
+          loading="lazy"
+      /></a>
     </section>
   </main>`;
 }
@@ -692,6 +746,13 @@ export function contentPage(
   l: Locale,
 ) {
   const soon = ["academy", "real-estate"].includes(id);
+  const scene =
+    content.image ||
+    (id === "academy"
+      ? "/assets/academy-concept.webp"
+      : id === "real-estate"
+        ? "/assets/estate-concept.webp"
+        : "");
   const workEmail = work.contactEmail || contacts.email;
   const workHref =
     work.ctaHref && work.ctaHref !== "/contact"
@@ -709,7 +770,7 @@ export function contentPage(
       ${content.logo ? html`<img class="division-logo" src="${content.logo}" alt="${text(content.eyebrow, l)}" />` : ""}${soon && content.comingSoon !== false ? html`<span class="coming-tag">${t("soon", l)}</span>` : ""}
       <h1 dir="auto">${text(content.title, l)}</h1>
       <p class="lead" dir="auto">${text(content.intro, l)}</p>
-      ${content.image ? html`<img class="content-image" src="${content.image}" alt="" width="1000" height="600" />` : ""}
+      ${scene ? html`<figure class="content-scene"><img class="content-image" src="${scene}" alt="" width="1000" height="1000" />${soon ? html`<figcaption>${content.comingSoon !== false ? t("soon", l) + " · " : ""}${text(content.eyebrow, l)}</figcaption>` : ""}</figure>` : ""}
       <div class="content-body">
         <span class="section-index"
           >${soon ? "NEXT CHAPTER" : "OUR PERSPECTIVE"}</span

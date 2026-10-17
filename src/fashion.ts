@@ -38,12 +38,16 @@ export function curatedFashion(
         return html`<section
           class="campaign campaign-${s.layout || "editorial"}"
         >
-          ${copy}
+          <div class="issue-heading">
+            <span class="issue-number" aria-hidden="true"
+              >${String(index + 1).padStart(2, "0")}</span
+            >${copy}
+          </div>
           <div class="campaign-art">
             <div class="campaign-visual">
               ${s.image ? html`<img src="${s.image}" alt="${text(s.title, l)}" width="900" height="1050" fetchpriority="${index === 0 ? "high" : "auto"}" />` : ""}
             </div>
-            ${s.secondaryImage ? html`<div class="campaign-secondary"><img src="${s.secondaryImage}" alt="" width="700" height="900" loading="lazy" /><span>UNIGLOBE FASHION</span></div>` : ""}
+            ${s.secondaryImage ? html`<div class="campaign-secondary"><span class="image-edition" aria-hidden="true">↗</span><img src="${s.secondaryImage}" alt="" width="700" height="900" loading="lazy" /><span>UNIGLOBE FASHION</span></div>` : ""}
           </div>
           <div class="campaign-index" aria-hidden="true">
             ${String(index + 1).padStart(2, "0")} / THE EDIT
@@ -57,7 +61,11 @@ export function curatedFashion(
         return html`<section
           class="editorial-story story-${s.layout || "split"} ${s.type}"
         >
-          ${s.image ? html`<div class="story-image"><img src="${s.image}" alt="${text(s.title, l)}" width="800" height="1000" loading="lazy" /></div>` : ""}${copy}
+          ${s.image ? html`<div class="story-image"><img src="${s.image}" alt="${text(s.title, l)}" width="800" height="1000" loading="lazy" /></div>` : ""}<span
+            class="story-edition"
+            aria-hidden="true"
+            >${String(index + 1).padStart(2, "0")}</span
+          >${copy}
         </section>`;
       if (["shop-by-category", "collection-grid"].includes(s.type)) {
         const kind =
@@ -68,7 +76,11 @@ export function curatedFashion(
             (!s.taxonomies?.length || s.taxonomies.includes(t.id)),
         );
         return html`<section class="merch-section wrap">
-          <header class="section-top">${copy}</header>
+          <header class="section-top">
+            <span class="section-serial" aria-hidden="true"
+              >${String(index + 1).padStart(2, "0")}</span
+            >${copy}
+          </header>
           <div class="collection-grid">
             ${choices.map(
               (t, i) =>
@@ -96,7 +108,11 @@ export function curatedFashion(
       return html`<section
         class="merch-section wrap layout-${s.layout || "grid"}"
       >
-        <header class="section-top">${copy}</header>
+        <header class="section-top">
+          <span class="section-serial" aria-hidden="true"
+            >${String(index + 1).padStart(2, "0")}</span
+          >${copy}
+        </header>
         <div class="product-grid">
           ${chosen.slice(0, 12).map((p) => card(p, l))}
         </div>

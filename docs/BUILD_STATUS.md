@@ -1,5 +1,14 @@
 # Build status
 
+## Full public design revamp — 2026-10-17 — review only, not deployed
+
+- Started from `8252972` on `work` in `/workspace/UniGlobe`. Rebuilt the public visual system around a multi-division Holdings identity and an editorial Fashion storefront. Production remains on the previously approved `b8f41f8` implementation; this pass does not deploy.
+- Holdings now introduces all three divisions through equally prominent photographic portals, a strong company masthead, an orbital navy statement and a compact active-Fashion feature. Real Estate and Academy have distinct conceptual coming-soon illustrations; existing configured page imagery overrides the fallbacks.
+- Fashion now uses oversized editorial typography, asymmetric campaign images, numbered merchandising, staggered product imagery and a contrasting image story. Public catalog, collections, product details, bag/checkout, controls and navigation follow the new visual system. A translated header return link and footer division navigation connect Fashion back to Holdings without stacking logos.
+- Added self-hosted licensed display fonts and two optimized conceptual WebP illustrations. Original supplied assets, approved logos and favicon files are unchanged. Existing division records supply homepage descriptions/images; no schema, content reset or API change is required.
+- Final verification: typecheck, 69 runtime tests, 15 browser journeys, automated WCAG A/AA across 23 routes and Worker dry-run build passed. Added a keyboard journey through Fashion → Holdings → all divisions with language retention; expanded 320px/tablet checks to include Fashion and both coming-soon pages in all four languages. Desktop/tablet/mobile screenshots, image loading, overflow, runtime errors, favicons, Arabic RTL, reduced motion and filter-dialog keyboard/focus behavior checked successfully.
+- Review notes and desktop/tablet/mobile screenshots: [PUBLIC_DESIGN_REVIEW.md](PUBLIC_DESIGN_REVIEW.md). Admin UX, business/security logic, ordering, APIs, data, translation infrastructure and Cloudflare resources/configuration remain unchanged. No production/Mail operations or paid services. Awaiting design approval before any deployment.
+
 ## Approved public design deployment — 2026-10-16
 
 - Deployed the approved clean `work` commit `b8f41f8` at 100% traffic on the existing `uniglobe-website` Worker.
